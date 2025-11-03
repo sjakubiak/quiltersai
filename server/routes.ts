@@ -222,17 +222,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Image data is required" });
       }
 
-      // TODO: Implement palette extraction using color-thief or similar
-      // For now, return sample palette
-      const samplePalette = [
-        "#008B8B",
-        "#2F4F4F",
-        "#FFFFFF",
-        "#D6456B",
-        "#FFB6C1",
-      ];
+      // Use colorthief to extract palette
+      // imageData should be a base64 data URI like "data:image/png;base64,..."
+      const { getPalette } = await import("colorthief");
+      
+      // Remove data URI prefix to get just the base64
+      const base64Data = imageData.split(',')[1] || imageData;
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      // Write to temp file for colorthief
+      const fs = await import("fs");
+      const path = await import("path");
+      const os = await import("os");
+      
+      const tempFilePath = path.join(os.tmpdir(), `palette-${Date.now()}.png`);
+      fs.writeFileSync(tempFilePath, buffer);
+      
+      // Extract palette using colorthief's direct function
+      const palette = await getPalette(tempFilePath, 8);
+      
+      // Clean up temp file
+      fs.unlinkSync(tempFilePath);
+      
+      // Convert RGB arrays to hex strings
+      const colors = palette.map((rgb: [number, number, number]) => {
+        const [r, g, b] = rgb;
+        return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+      });
 
-      res.json({ colors: samplePalette });
+      res.json({ colors });
     } catch (error) {
       console.error("Error extracting palette:", error);
       res.status(500).json({ error: "Failed to extract palette" });

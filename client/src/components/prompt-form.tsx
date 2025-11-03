@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Sparkles, Upload, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface PromptFormProps {
   onGenerate: (prompt: string) => void;
@@ -33,6 +37,63 @@ export function PromptForm({ onGenerate, isGenerating }: PromptFormProps) {
   const [skillLevel, setSkillLevel] = useState("intermediate");
   const [budget, setBudget] = useState("120");
   const [colors, setColors] = useState("");
+  const [extractedColors, setExtractedColors] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const extractPaletteMutation = useMutation({
+    mutationFn: async (imageData: string) => {
+      return await apiRequest<{ colors: string[] }>("POST", "/api/palette/extract", { imageData });
+    },
+    onSuccess: (data) => {
+      setExtractedColors(data.colors);
+      setColors(data.colors.join(", "));
+      toast({
+        title: "Colors extracted!",
+        description: `Found ${data.colors.length} colors from your image.`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to extract colors. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file",
+        description: "Please upload an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Read file as base64
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const imageData = event.target?.result as string;
+      extractPaletteMutation.mutate(imageData);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const removeExtractedColor = (index: number) => {
+    const newColors = extractedColors.filter((_, i) => i !== index);
+    setExtractedColors(newColors);
+    setColors(newColors.join(", "));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,13 +206,76 @@ export function PromptForm({ onGenerate, isGenerating }: PromptFormProps) {
 
             <div className="space-y-2">
               <Label htmlFor="colors" className="text-sm">Color Preferences (optional)</Label>
-              <Input
-                id="colors"
-                data-testid="input-colors"
-                placeholder="e.g., teal, charcoal, white"
-                value={colors}
-                onChange={(e) => setColors(e.target.value)}
-              />
+              <div className="space-y-2">
+                <Input
+                  id="colors"
+                  data-testid="input-colors"
+                  placeholder="e.g., teal, charcoal, white"
+                  value={colors}
+                  onChange={(e) => setColors(e.target.value)}
+                />
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    data-testid="input-image-upload"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleUploadClick}
+                    disabled={extractPaletteMutation.isPending}
+                    data-testid="button-upload-image"
+                  >
+                    {extractPaletteMutation.isPending ? (
+                      <>
+                        <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+                        Extracting...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-3 w-3" />
+                        Extract from Image
+                      </>
+                    )}
+                  </Button>
+                  {extractedColors.length > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {extractedColors.length} colors extracted
+                    </span>
+                  )}
+                </div>
+                {extractedColors.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {extractedColors.map((color, index) => (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="flex items-center gap-1 px-2 py-1"
+                        data-testid={`badge-color-${index}`}
+                      >
+                        <div
+                          className="h-3 w-3 rounded-full border border-border"
+                          style={{ backgroundColor: color }}
+                        />
+                        <span className="text-xs">{color}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeExtractedColor(index)}
+                          className="ml-1 hover:text-destructive"
+                          data-testid={`button-remove-color-${index}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </AccordionContent>
         </AccordionItem>

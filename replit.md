@@ -225,12 +225,12 @@ The application follows a schema-first approach with horizontal batching:
 
 ## Recent Changes
 
-- **2025-11-03**: Database Migration Complete
-  - Migrated from in-memory storage to PostgreSQL with Drizzle ORM
-  - All data now persists across server restarts
+- **2025-11-03**: Major Feature Updates
+  - **Database Migration**: Migrated from in-memory to PostgreSQL with Drizzle ORM, all data persists across restarts
+  - **PDF Export**: Complete printable quilt pattern PDFs with cut lists, piecing instructions, calibration square, and material summaries using PDFKit
+  - **Image Palette Extraction**: Upload photos to extract 5-8 dominant colors using ColorThief library, integrated into prompt form with visual color badges
   - Fixed backing/batting calculations to use actual spec dimensions
-  - Database schema with proper foreign key relationships
-  - End-to-end testing validates persistence
+  - End-to-end testing validates all new features
 
 - **2025-01-03**: Complete MVP implementation
   - All data schemas and TypeScript interfaces
