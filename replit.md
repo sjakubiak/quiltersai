@@ -225,6 +225,13 @@ The application follows a schema-first approach with horizontal batching:
 
 ## Recent Changes
 
+- **2025-11-03**: Database Migration Complete
+  - Migrated from in-memory storage to PostgreSQL with Drizzle ORM
+  - All data now persists across server restarts
+  - Fixed backing/batting calculations to use actual spec dimensions
+  - Database schema with proper foreign key relationships
+  - End-to-end testing validates persistence
+
 - **2025-01-03**: Complete MVP implementation
   - All data schemas and TypeScript interfaces
   - Beautiful frontend with exceptional visual quality

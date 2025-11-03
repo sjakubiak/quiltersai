@@ -10,8 +10,16 @@ import {
   type SavedDesign,
   type InsertSavedDesign,
   type DesignWithDetails,
+  quiltSpecs,
+  designVariations,
+  cutListItems,
+  piecingSteps,
+  savedDesigns,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { eq, desc, asc } from "drizzle-orm";
 
 export interface IStorage {
   // Quilt Specs
@@ -187,4 +195,131 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// PostgreSQL Database Storage
+export class DbStorage implements IStorage {
+  private db;
+
+  constructor() {
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL environment variable is required");
+    }
+    const sql = neon(process.env.DATABASE_URL);
+    this.db = drizzle(sql);
+  }
+
+  // Quilt Specs
+  async createQuiltSpec(insertSpec: InsertQuiltSpec): Promise<QuiltSpec> {
+    const [spec] = await this.db.insert(quiltSpecs).values(insertSpec).returning();
+    return spec;
+  }
+
+  async getQuiltSpec(id: string): Promise<QuiltSpec | undefined> {
+    const [spec] = await this.db.select().from(quiltSpecs).where(eq(quiltSpecs.id, id));
+    return spec;
+  }
+
+  // Design Variations
+  async createDesignVariation(insertDesign: InsertDesignVariation): Promise<DesignVariation> {
+    const [design] = await this.db.insert(designVariations).values(insertDesign).returning();
+    return design;
+  }
+
+  async getDesignVariation(id: string): Promise<DesignVariation | undefined> {
+    const [design] = await this.db.select().from(designVariations).where(eq(designVariations.id, id));
+    return design;
+  }
+
+  async getAllDesignVariations(): Promise<DesignVariation[]> {
+    return await this.db.select().from(designVariations).orderBy(desc(designVariations.createdAt));
+  }
+
+  async getDesignVariationsBySpecId(specId: string): Promise<DesignVariation[]> {
+    return await this.db
+      .select()
+      .from(designVariations)
+      .where(eq(designVariations.specId, specId))
+      .orderBy(desc(designVariations.createdAt));
+  }
+
+  // Cut List Items
+  async createCutListItem(insertItem: InsertCutListItem): Promise<CutListItem> {
+    const [item] = await this.db.insert(cutListItems).values(insertItem).returning();
+    return item;
+  }
+
+  async getCutListItemsByDesignId(designId: string): Promise<CutListItem[]> {
+    return await this.db.select().from(cutListItems).where(eq(cutListItems.designId, designId));
+  }
+
+  // Piecing Steps
+  async createPiecingStep(insertStep: InsertPiecingStep): Promise<PiecingStep> {
+    const [step] = await this.db.insert(piecingSteps).values(insertStep).returning();
+    return step;
+  }
+
+  async getPiecingStepsByDesignId(designId: string): Promise<PiecingStep[]> {
+    return await this.db
+      .select()
+      .from(piecingSteps)
+      .where(eq(piecingSteps.designId, designId))
+      .orderBy(asc(piecingSteps.stepNumber));
+  }
+
+  // Saved Designs
+  async saveDesign(insertSaved: InsertSavedDesign): Promise<SavedDesign> {
+    const [saved] = await this.db.insert(savedDesigns).values(insertSaved).returning();
+    return saved;
+  }
+
+  async getSavedDesigns(userId?: string): Promise<SavedDesign[]> {
+    if (userId) {
+      return await this.db.select().from(savedDesigns).where(eq(savedDesigns.userId, userId));
+    }
+    return await this.db.select().from(savedDesigns);
+  }
+
+  // Helper method
+  async getDesignWithDetails(designId: string): Promise<DesignWithDetails | undefined> {
+    const design = await this.getDesignVariation(designId);
+    if (!design) return undefined;
+
+    const cutList = await this.getCutListItemsByDesignId(designId);
+    const steps = await this.getPiecingStepsByDesignId(designId);
+
+    // Get the spec to determine quilt dimensions
+    let quiltWidth = 60;
+    let quiltHeight = 80;
+    
+    if (design.specId) {
+      const spec = await this.getQuiltSpec(design.specId);
+      if (spec) {
+        quiltWidth = spec.widthIn;
+        quiltHeight = spec.heightIn;
+      }
+    }
+
+    return {
+      design,
+      cutList,
+      steps,
+      backing: {
+        yardage: ((quiltHeight + 8) / 36) * 2,
+        widthIn: quiltWidth + 8,
+        heightIn: quiltHeight + 8,
+        piecingPlan: "Horizontal seam at center",
+      },
+      batting: {
+        widthIn: quiltWidth + 4,
+        heightIn: quiltHeight + 4,
+      },
+      binding: {
+        yardage: (((quiltWidth + quiltHeight) * 2 + 10) / 36) * 0.5,
+        stripWidthIn: 2.5,
+        totalLengthIn: (quiltWidth + quiltHeight) * 2 + 10,
+      },
+    };
+  }
+}
+
+// Use database storage instead of memory storage
+export const storage = new DbStorage();
