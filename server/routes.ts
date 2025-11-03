@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { interpretPrompt } from "./services/prompt-interpreter";
 import { generateDesigns } from "./services/quilt-generator";
+import { generateQuiltPDF } from "./services/pdf-export";
 import type { PromptInterpretRequest, GenerateDesignsRequest } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -184,9 +185,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Design ID is required" });
       }
 
-      // TODO: Implement PDF generation
-      // For now, return a placeholder response
-      res.json({ message: "PDF export coming soon", designId });
+      // Get design with all details
+      const designDetails = await storage.getDesignWithDetails(designId);
+      if (!designDetails) {
+        return res.status(404).json({ error: "Design not found" });
+      }
+
+      // Generate PDF
+      const pdfBuffer = await generateQuiltPDF(designDetails);
+
+      // Set headers for file download
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${designDetails.design.name.replace(/[^a-z0-9]/gi, "_")}_pattern.pdf"`
+      );
+      res.setHeader("Content-Length", pdfBuffer.length);
+
+      // Send PDF buffer
+      res.send(pdfBuffer);
     } catch (error) {
       console.error("Error exporting PDF:", error);
       res.status(500).json({ error: "Failed to export PDF" });

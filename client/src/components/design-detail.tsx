@@ -44,12 +44,42 @@ export function DesignDetail({ design, onClose }: DesignDetailProps) {
 
   const exportMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("POST", "/api/export/pdf", { designId: design.design.id });
+      const response = await fetch("/api/export/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ designId: design.design.id }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to export PDF");
+      }
+      
+      // Get the filename from Content-Disposition header or use default
+      const disposition = response.headers.get("Content-Disposition");
+      const filenameMatch = disposition?.match(/filename="(.+)"/);
+      const filename = filenameMatch?.[1] || `${design.design.name}_pattern.pdf`;
+      
+      // Get the PDF blob
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      return { success: true };
     },
     onSuccess: () => {
       toast({
-        title: "Export started!",
-        description: "Your PDF will download shortly.",
+        title: "PDF Downloaded!",
+        description: "Your quilt pattern has been downloaded.",
       });
     },
     onError: () => {
