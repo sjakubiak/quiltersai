@@ -14,6 +14,8 @@ import {
   type UpsertUser,
   type UsageTracking,
   type InsertUsageTracking,
+  type Feedback,
+  type InsertFeedback,
   type DesignWithDetails,
   quiltSpecs,
   designVariations,
@@ -22,6 +24,7 @@ import {
   savedDesigns,
   users,
   usageTracking,
+  feedback,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { neon } from "@neondatabase/serverless";
@@ -67,6 +70,12 @@ export interface IStorage {
   getOrCreateUsageTracking(userId: string, period: string, periodType: 'daily' | 'monthly'): Promise<UsageTracking>;
   incrementGenerationCount(userId: string, period: string, periodType: 'daily' | 'monthly'): Promise<UsageTracking>;
   getUsageForPeriod(userId: string, period: string, periodType: 'daily' | 'monthly'): Promise<UsageTracking | undefined>;
+  
+  // Feedback
+  createFeedback(feedbackData: InsertFeedback): Promise<Feedback>;
+  getAllFeedback(): Promise<Feedback[]>;
+  getFeedbackById(id: string): Promise<Feedback | undefined>;
+  updateFeedbackStatus(id: string, status: string): Promise<Feedback | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -247,6 +256,23 @@ export class MemStorage implements IStorage {
   }
 
   async getUsageForPeriod(userId: string, period: string, periodType: 'daily' | 'monthly'): Promise<UsageTracking | undefined> {
+    return undefined;
+  }
+
+  // Feedback - Stub implementations
+  async createFeedback(feedbackData: InsertFeedback): Promise<Feedback> {
+    throw new Error("Feedback not supported in MemStorage");
+  }
+
+  async getAllFeedback(): Promise<Feedback[]> {
+    return [];
+  }
+
+  async getFeedbackById(id: string): Promise<Feedback | undefined> {
+    return undefined;
+  }
+
+  async updateFeedbackStatus(id: string, status: string): Promise<Feedback | undefined> {
     return undefined;
   }
 }
@@ -508,6 +534,30 @@ export class DbStorage implements IStorage {
       );
 
     return record;
+  }
+
+  // Feedback
+  async createFeedback(feedbackData: InsertFeedback): Promise<Feedback> {
+    const [newFeedback] = await this.db.insert(feedback).values(feedbackData).returning();
+    return newFeedback;
+  }
+
+  async getAllFeedback(): Promise<Feedback[]> {
+    return await this.db.select().from(feedback).orderBy(desc(feedback.createdAt));
+  }
+
+  async getFeedbackById(id: string): Promise<Feedback | undefined> {
+    const [result] = await this.db.select().from(feedback).where(eq(feedback.id, id));
+    return result;
+  }
+
+  async updateFeedbackStatus(id: string, status: string): Promise<Feedback | undefined> {
+    const [updated] = await this.db
+      .update(feedback)
+      .set({ status })
+      .where(eq(feedback.id, id))
+      .returning();
+    return updated;
   }
 }
 

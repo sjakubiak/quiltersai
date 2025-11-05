@@ -119,6 +119,19 @@ export const usageTracking = pgTable("usage_tracking", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Feedback submissions
+export const feedback = pgTable("feedback", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  email: varchar("email", { length: 255 }).notNull(),
+  name: varchar("name", { length: 255 }),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  category: varchar("category", { length: 50 }), // bug, feature, question, other
+  status: varchar("status", { length: 20 }).notNull().default("new"), // new, read, replied, closed
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertQuiltSpecSchema = createInsertSchema(quiltSpecs).omit({
   id: true,
@@ -154,6 +167,11 @@ export const insertUsageTrackingSchema = createInsertSchema(usageTracking).omit(
   updatedAt: true,
 });
 
+export const insertFeedbackSchema = createInsertSchema(feedback).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type QuiltSpec = typeof quiltSpecs.$inferSelect;
 export type InsertQuiltSpec = z.infer<typeof insertQuiltSpecSchema>;
@@ -176,6 +194,9 @@ export type UpsertUser = typeof users.$inferInsert; // Required for Replit Auth
 
 export type UsageTracking = typeof usageTracking.$inferSelect;
 export type InsertUsageTracking = z.infer<typeof insertUsageTrackingSchema>;
+
+export type Feedback = typeof feedback.$inferSelect;
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 
 // Additional TypeScript interfaces for API communication
 export interface PromptInterpretRequest {
