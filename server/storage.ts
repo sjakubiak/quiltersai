@@ -11,6 +11,7 @@ import {
   type InsertSavedDesign,
   type User,
   type InsertUser,
+  type UpsertUser,
   type UsageTracking,
   type InsertUsageTracking,
   type DesignWithDetails,
@@ -53,9 +54,11 @@ export interface IStorage {
   // Helper to get design with all details
   getDesignWithDetails(designId: string): Promise<DesignWithDetails | undefined>;
 
-  // Users
-  createUser(user: InsertUser): Promise<User>;
-  getUserById(id: string): Promise<User | undefined>;
+  // Users - Replit Auth required methods
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  
+  // Users - Additional subscription methods
   getUserByEmail(email: string): Promise<User | undefined>;
   updateUserSubscription(userId: string, stripeCustomerId: string, stripeSubscriptionId: string, tier: string, status: string): Promise<User | undefined>;
   updateSubscriptionTier(userId: string, tier: string): Promise<User | undefined>;
@@ -212,15 +215,16 @@ export class MemStorage implements IStorage {
     };
   }
 
-  // Users - Stub implementations (MemStorage not used for subscriptions)
-  async createUser(insertUser: InsertUser): Promise<User> {
-    throw new Error("User management not supported in MemStorage");
-  }
-
-  async getUserById(id: string): Promise<User | undefined> {
+  // Users - Replit Auth required methods (stub implementations)
+  async getUser(id: string): Promise<User | undefined> {
     return undefined;
   }
 
+  async upsertUser(user: UpsertUser): Promise<User> {
+    throw new Error("User management not supported in MemStorage");
+  }
+
+  // Users - Additional subscription methods (stub implementations)
   async getUserByEmail(email: string): Promise<User | undefined> {
     return undefined;
   }
@@ -372,17 +376,28 @@ export class DbStorage implements IStorage {
     };
   }
 
-  // Users
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await this.db.insert(users).values(insertUser).returning();
-    return user;
-  }
-
-  async getUserById(id: string): Promise<User | undefined> {
+  // Users - Replit Auth required methods
+  async getUser(id: string): Promise<User | undefined> {
     const [user] = await this.db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await this.db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
+  // Users - Additional subscription methods
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await this.db.select().from(users).where(eq(users.email, email));
     return user;

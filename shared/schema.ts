@@ -1,4 +1,4 @@
-import { pgTable, text, varchar, integer, jsonb, timestamp, real } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, jsonb, timestamp, real, index } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -76,16 +76,34 @@ export const savedDesigns = pgTable("saved_designs", {
   savedAt: timestamp("saved_at").defaultNow(),
 });
 
-// Users table for authentication and subscription management
+// Session storage table for Replit Auth
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// Users table - Merges Replit Auth fields with subscription management
+// (IMPORTANT) Replit Auth fields are mandatory: id, email, firstName, lastName, profileImageUrl
 export const users = pgTable("users", {
+  // Replit Auth fields
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email", { length: 255 }).notNull().unique(),
-  username: varchar("username", { length: 100 }),
-  passwordHash: text("password_hash").notNull(),
+  email: varchar("email", { length: 255 }).unique(),
+  firstName: varchar("first_name", { length: 100 }),
+  lastName: varchar("last_name", { length: 100 }),
+  profileImageUrl: varchar("profile_image_url", { length: 500 }),
+  
+  // Subscription management fields
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
   subscriptionTier: varchar("subscription_tier", { length: 20 }).notNull().default("FREE"), // FREE, HOBBY, PRO
   subscriptionStatus: varchar("subscription_status", { length: 50 }).default("active"), // active, canceled, past_due, incomplete
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -126,7 +144,6 @@ export const insertSavedDesignSchema = createInsertSchema(savedDesigns).omit({
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
   createdAt: true,
   updatedAt: true,
 });
@@ -155,6 +172,7 @@ export type InsertSavedDesign = z.infer<typeof insertSavedDesignSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof users.$inferInsert; // Required for Replit Auth
 
 export type UsageTracking = typeof usageTracking.$inferSelect;
 export type InsertUsageTracking = z.infer<typeof insertUsageTrackingSchema>;
