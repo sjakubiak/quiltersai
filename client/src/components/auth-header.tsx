@@ -2,7 +2,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { LogIn, LogOut, User } from "lucide-react";
+import { LogIn, LogOut, User, CreditCard, Sparkles } from "lucide-react";
+import { Link } from "wouter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -98,6 +99,19 @@ export function AuthHeader() {
               )}
             </div>
           </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <Link href="/account">
+            <DropdownMenuItem data-testid="menu-item-account">
+              <User className="w-4 h-4 mr-2" />
+              Account Settings
+            </DropdownMenuItem>
+          </Link>
+          <Link href="/pricing">
+            <DropdownMenuItem data-testid="menu-item-pricing">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Pricing & Plans
+            </DropdownMenuItem>
+          </Link>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => window.location.href = "/api/logout"}
