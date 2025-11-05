@@ -70,6 +70,7 @@ Quilter's AI helps quilters design beautiful quilts by describing what they want
       - quilt-overview.tsx       # Design overview tab
       - cut-list-table.tsx       # Fabric cutting requirements
       - piecing-steps.tsx        # Assembly instructions
+      - feedback-form.tsx        # User feedback modal form
       - /ui                      # shadcn components
     /pages
       - home.tsx                 # Main application page
@@ -82,8 +83,10 @@ Quilter's AI helps quilters design beautiful quilts by describing what they want
 
 /server
   - routes.ts                    # API endpoints
-  - storage.ts                   # In-memory data storage interface
+  - storage.ts                   # Data storage interface (PostgreSQL + in-memory fallback)
   - index.ts                     # Express server setup
+  /services
+    - email.ts                   # Resend email service for feedback notifications
 
 /shared
   - schema.ts                    # TypeScript types & Drizzle schemas
@@ -224,6 +227,15 @@ The application follows a schema-first approach with horizontal batching:
 - Design sharing and community gallery
 
 ## Recent Changes
+
+- **2025-11-05**: Feedback System Implementation
+  - **Database Schema**: Added feedback table with fields for name, email, category, subject, message, userId, and status
+  - **API Endpoint**: POST /api/feedback with Zod validation and error handling
+  - **Email Integration**: Resend email service sends notifications to sjakubiak@gmail.com
+  - **Security**: HTML escaping to prevent injection attacks, secure handling of user input
+  - **UI Component**: Beautiful modal feedback form with category dropdown (bug, feature, question, other)
+  - **Header Integration**: "Send Feedback" button accessible from main navigation
+  - End-to-end testing passed with security validation
 
 - **2025-11-05**: Complete Subscription System Implementation
   - **Stripe Integration**: Full subscription system with three tiers (FREE, HOBBY $8/mo, PRO $18/mo)
