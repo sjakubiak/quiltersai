@@ -203,8 +203,12 @@ function calculateLayout(
 }
 
 function selectColors(palette: string[], min: number, max: number, seed: number): string[] {
-  const count = Math.min(Math.max(min, 2 + (seed % (max - min + 1))), palette.length);
-  return palette.slice(0, count);
+  // Ensure palette has at least some colors, use defaults if empty
+  const defaultPalette = ["#8B4513", "#F5DEB3", "#CD853F", "#DEB887"];
+  const safePalette = palette && palette.length > 0 ? palette : defaultPalette;
+  
+  const count = Math.min(Math.max(min, 2 + (seed % (max - min + 1))), safePalette.length);
+  return safePalette.slice(0, Math.max(count, min));
 }
 
 function generateMockupSVG(
@@ -375,8 +379,8 @@ function generateCutList(
   });
 
   // Sashing if needed
-  if (sashingWidth > 0) {
-    const sashingColor = colors[colors.length - 1];
+  if (sashingWidth > 0 && colors.length > 0) {
+    const sashingColor = colors[colors.length - 1] || "#FFFFFF"; // Fallback to white if undefined
     const horizontalSashing = rows * (cols - 1);
     const verticalSashing = cols * (rows - 1);
     
