@@ -228,6 +228,16 @@ The application follows a schema-first approach with horizontal batching:
 
 ## Recent Changes
 
+- **2025-11-05**: Usage Limit Enforcement System
+  - **Tier-Based Limits**: FREE (3/day), HOBBY (50/month), PRO (500/month)
+  - **Anonymous Tracking**: Session-based tracking for non-logged-in users
+  - **Database Schema**: Modified usage_tracking table to accept both user IDs and session IDs
+  - **API Endpoints**: POST /api/generate enforces limits, GET /api/usage shows current stats
+  - **Frontend Display**: UsageIndicator component shows progress, remaining count, and upgrade prompts
+  - **Error Handling**: Returns 429 status with helpful messages when limits exceeded
+  - **Security**: Session-based tracking for anonymous users, no data leaks
+  - End-to-end testing passed for FREE tier (3 designs per day)
+
 - **2025-11-05**: Feedback System Implementation
   - **Database Schema**: Added feedback table with fields for name, email, category, subject, message, userId, and status
   - **API Endpoint**: POST /api/feedback with Zod validation and error handling

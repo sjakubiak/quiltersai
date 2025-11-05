@@ -6,6 +6,7 @@ import { DesignGrid } from "@/components/design-grid";
 import { DesignDetail } from "@/components/design-detail";
 import { AuthHeader } from "@/components/auth-header";
 import { FeedbackForm } from "@/components/feedback-form";
+import { UsageIndicator } from "@/components/usage-indicator";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Moon, Sun } from "lucide-react";
 import type { DesignVariation, DesignWithDetails } from "@shared/schema";
@@ -59,6 +60,7 @@ export default function Home() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/designs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/usage"] });
     },
   });
 
@@ -99,11 +101,12 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8">
         <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
           {/* Left Panel - Prompt Form */}
-          <aside className="lg:sticky lg:top-24 lg:h-fit">
+          <aside className="lg:sticky lg:top-24 lg:h-fit space-y-4">
             <PromptForm
               onGenerate={(prompt) => generateMutation.mutate(prompt)}
               isGenerating={generateMutation.isPending}
             />
+            <UsageIndicator />
           </aside>
 
           {/* Main Content - Design Grid */}
