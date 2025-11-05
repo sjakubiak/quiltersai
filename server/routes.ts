@@ -5,6 +5,7 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { interpretPrompt } from "./services/prompt-interpreter";
 import { generateDesigns } from "./services/quilt-generator";
 import { generateQuiltPDF } from "./services/pdf-export";
+import { sendFeedbackEmail } from "./services/email";
 import type { PromptInterpretRequest, GenerateDesignsRequest } from "@shared/schema";
 import { users, insertFeedbackSchema } from "@shared/schema";
 import { eq } from "drizzle-orm";
@@ -666,8 +667,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const feedback = await storage.createFeedback(feedbackData);
       
-      // TODO: Send email notification to sjakubiak@gmail.com
-      // This will be implemented once user provides email service credentials
+      // Send email notification to sjakubiak@gmail.com
+      await sendFeedbackEmail({
+        name: feedbackData.name || undefined,
+        email: feedbackData.email,
+        subject: feedbackData.subject,
+        message: feedbackData.message,
+        category: feedbackData.category || undefined,
+        userId: feedbackData.userId || undefined,
+      });
       
       res.json({ success: true, id: feedback.id });
     } catch (error) {
