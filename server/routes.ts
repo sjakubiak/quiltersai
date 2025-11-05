@@ -6,11 +6,18 @@ import { interpretPrompt } from "./services/prompt-interpreter";
 import { generateDesigns } from "./services/quilt-generator";
 import { generateQuiltPDF } from "./services/pdf-export";
 import { sendFeedbackEmail } from "./services/email";
+
+// Extend session data to include usage tracking fields
+declare module "express-session" {
+  interface SessionData {
+    initialized?: boolean;
+  }
+}
 import type { PromptInterpretRequest, GenerateDesignsRequest } from "@shared/schema";
 import { users, insertFeedbackSchema } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import Stripe from "stripe";
-import { getServerTierFeatures, canExportPdf } from "@shared/pricing";
+import { getServerTierFeatures, canExportPdf, SUBSCRIPTION_TIERS, type SubscriptionTier, getGenerationLimit } from "@shared/pricing";
 
 // Get server-side tier features with Stripe Price IDs
 const TIER_FEATURES = getServerTierFeatures();
@@ -43,6 +50,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   /**
+   * GET /api/usage
+   * Get current usage stats for the user
+   */
+  app.get("/api/usage", async (req, res) => {
+    try {
+      const user = req.user as any;
+      const userId = user?.claims?.sub || req.sessionID;
+      
+      // Get user's subscription tier
+      let tier: SubscriptionTier = SUBSCRIPTION_TIERS.FREE;
+      if (user?.claims?.sub) {
+        const dbUser = await storage.getUser(user.claims.sub);
+        if (dbUser?.subscriptionTier && dbUser.subscriptionStatus === 'active') {
+          tier = dbUser.subscriptionTier as SubscriptionTier;
+        }
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      
+      const periodType = tier === SUBSCRIPTION_TIERS.FREE ? 'daily' : 'monthly';
+      const period = periodType === 'daily' ? today : currentMonth;
+      const limit = getGenerationLimit(tier, periodType);
+      
+      const usage = await storage.getUsageForPeriod(userId, period, periodType);
+      const used = usage?.generationCount || 0;
+      
+      res.json({
+        tier,
+        limit,
+        used,
+        remaining: limit ? limit - used : null,
+        periodType,
+        period,
+      });
+    } catch (error) {
+      console.error("Error fetching usage:", error);
+      res.status(500).json({ error: "Failed to fetch usage" });
+    }
+  });
+
+  /**
    * POST /api/interpret
    * Interpret a natural language prompt into structured quilt specifications
    */
@@ -72,6 +121,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!prompt || typeof prompt !== "string") {
         return res.status(400).json({ error: "Prompt is required" });
+      }
+
+      // Get user ID (authenticated user or anonymous session)
+      const user = req.user as any;
+      const userId = user?.claims?.sub || req.sessionID;
+      
+      // Ensure session exists for anonymous users
+      if (!req.session.initialized) {
+        req.session.initialized = true;
+      }
+
+      // Get user's subscription tier (default to FREE for anonymous/non-subscribed users)
+      let tier: SubscriptionTier = SUBSCRIPTION_TIERS.FREE;
+      if (user?.claims?.sub) {
+        const dbUser = await storage.getUser(user.claims.sub);
+        if (dbUser?.subscriptionTier && dbUser.subscriptionStatus === 'active') {
+          tier = dbUser.subscriptionTier as SubscriptionTier;
+        }
+      }
+
+      // Check usage limits
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+      
+      const periodType = tier === SUBSCRIPTION_TIERS.FREE ? 'daily' : 'monthly';
+      const period = periodType === 'daily' ? today : currentMonth;
+      
+      const generationLimit = getGenerationLimit(tier, periodType);
+      
+      if (generationLimit !== null) {
+        const usage = await storage.getUsageForPeriod(userId, period, periodType);
+        const currentCount = usage?.generationCount || 0;
+        
+        if (currentCount >= generationLimit) {
+          return res.status(429).json({
+            error: "Generation limit reached",
+            message: `You've reached your ${periodType} limit of ${generationLimit} designs. ${
+              tier === SUBSCRIPTION_TIERS.FREE
+                ? "Upgrade to generate more designs!"
+                : "Your limit will reset next " + (periodType === 'daily' ? 'day' : 'month') + "."
+            }`,
+            limit: generationLimit,
+            used: currentCount,
+            tier,
+            periodType,
+          });
+        }
       }
 
       // Interpret prompt
@@ -127,6 +223,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         savedDesigns.push(design);
       }
+
+      // Increment usage count after successful generation
+      await storage.incrementGenerationCount(userId, period, periodType);
 
       res.json(savedDesigns);
     } catch (error) {

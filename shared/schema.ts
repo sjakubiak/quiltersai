@@ -109,9 +109,10 @@ export const users = pgTable("users", {
 });
 
 // Usage tracking for generation limits
+// Note: userId can be either a user.id (for logged-in users) or a session ID (for anonymous users)
 export const usageTracking = pgTable("usage_tracking", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id).notNull(),
+  userId: varchar("user_id").notNull(), // Can be user.id or session ID - no FK constraint to support both
   period: varchar("period", { length: 20 }).notNull(), // YYYY-MM-DD for daily, YYYY-MM for monthly
   periodType: varchar("period_type", { length: 10 }).notNull(), // daily, monthly
   generationCount: integer("generation_count").notNull().default(0),
