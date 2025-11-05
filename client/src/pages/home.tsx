@@ -5,6 +5,7 @@ import { PromptForm } from "@/components/prompt-form";
 import { DesignGrid } from "@/components/design-grid";
 import { DesignDetail } from "@/components/design-detail";
 import { AuthHeader } from "@/components/auth-header";
+import { FeedbackForm } from "@/components/feedback-form";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Moon, Sun } from "lucide-react";
 import type { DesignVariation, DesignWithDetails } from "@shared/schema";
@@ -77,6 +78,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <AuthHeader />
+            <FeedbackForm />
             <Button
               data-testid="button-theme-toggle"
               size="icon"
