@@ -6,7 +6,7 @@ import { interpretPrompt } from "./services/prompt-interpreter";
 import { generateDesigns } from "./services/quilt-generator";
 import { generateQuiltPDF } from "./services/pdf-export";
 import type { PromptInterpretRequest, GenerateDesignsRequest } from "@shared/schema";
-import { users } from "@shared/schema";
+import { users, insertFeedbackSchema } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import Stripe from "stripe";
 import { getServerTierFeatures, canExportPdf } from "@shared/pricing";
@@ -640,6 +640,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err: any) {
       console.error('Webhook error:', err.message);
       res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+  });
+
+  /**
+   * POST /api/feedback
+   * Submit user feedback
+   */
+  app.post("/api/feedback", async (req: any, res) => {
+    try {
+      const validation = insertFeedbackSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Invalid feedback data", 
+          details: validation.error.issues 
+        });
+      }
+
+      // Add user ID if authenticated
+      const feedbackData = {
+        ...validation.data,
+        userId: req.user?.claims?.sub || null,
+      };
+
+      const feedback = await storage.createFeedback(feedbackData);
+      
+      // TODO: Send email notification to sjakubiak@gmail.com
+      // This will be implemented once user provides email service credentials
+      
+      res.json({ success: true, id: feedback.id });
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      res.status(500).json({ error: "Failed to submit feedback" });
+    }
+  });
+
+  /**
+   * GET /api/feedback
+   * Get all feedback (admin only - not protected yet)
+   */
+  app.get("/api/feedback", async (req, res) => {
+    try {
+      const feedbackList = await storage.getAllFeedback();
+      res.json(feedbackList);
+    } catch (error) {
+      console.error("Error fetching feedback:", error);
+      res.status(500).json({ error: "Failed to fetch feedback" });
     }
   });
 
