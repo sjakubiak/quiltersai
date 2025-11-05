@@ -9,17 +9,23 @@ import {
   type InsertPiecingStep,
   type SavedDesign,
   type InsertSavedDesign,
+  type User,
+  type InsertUser,
+  type UsageTracking,
+  type InsertUsageTracking,
   type DesignWithDetails,
   quiltSpecs,
   designVariations,
   cutListItems,
   piecingSteps,
   savedDesigns,
+  users,
+  usageTracking,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { eq, desc, asc } from "drizzle-orm";
+import { eq, desc, asc, and } from "drizzle-orm";
 
 export interface IStorage {
   // Quilt Specs
@@ -46,6 +52,18 @@ export interface IStorage {
 
   // Helper to get design with all details
   getDesignWithDetails(designId: string): Promise<DesignWithDetails | undefined>;
+
+  // Users
+  createUser(user: InsertUser): Promise<User>;
+  getUserById(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  updateUserSubscription(userId: string, stripeCustomerId: string, stripeSubscriptionId: string, tier: string, status: string): Promise<User | undefined>;
+  updateSubscriptionTier(userId: string, tier: string): Promise<User | undefined>;
+  
+  // Usage Tracking
+  getOrCreateUsageTracking(userId: string, period: string, periodType: 'daily' | 'monthly'): Promise<UsageTracking>;
+  incrementGenerationCount(userId: string, period: string, periodType: 'daily' | 'monthly'): Promise<UsageTracking>;
+  getUsageForPeriod(userId: string, period: string, periodType: 'daily' | 'monthly'): Promise<UsageTracking | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -193,6 +211,40 @@ export class MemStorage implements IStorage {
       },
     };
   }
+
+  // Users - Stub implementations (MemStorage not used for subscriptions)
+  async createUser(insertUser: InsertUser): Promise<User> {
+    throw new Error("User management not supported in MemStorage");
+  }
+
+  async getUserById(id: string): Promise<User | undefined> {
+    return undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return undefined;
+  }
+
+  async updateUserSubscription(userId: string, stripeCustomerId: string, stripeSubscriptionId: string, tier: string, status: string): Promise<User | undefined> {
+    return undefined;
+  }
+
+  async updateSubscriptionTier(userId: string, tier: string): Promise<User | undefined> {
+    return undefined;
+  }
+
+  // Usage Tracking - Stub implementations
+  async getOrCreateUsageTracking(userId: string, period: string, periodType: 'daily' | 'monthly'): Promise<UsageTracking> {
+    throw new Error("Usage tracking not supported in MemStorage");
+  }
+
+  async incrementGenerationCount(userId: string, period: string, periodType: 'daily' | 'monthly'): Promise<UsageTracking> {
+    throw new Error("Usage tracking not supported in MemStorage");
+  }
+
+  async getUsageForPeriod(userId: string, period: string, periodType: 'daily' | 'monthly'): Promise<UsageTracking | undefined> {
+    return undefined;
+  }
 }
 
 // PostgreSQL Database Storage
@@ -318,6 +370,129 @@ export class DbStorage implements IStorage {
         totalLengthIn: (quiltWidth + quiltHeight) * 2 + 10,
       },
     };
+  }
+
+  // Users
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await this.db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async getUserById(id: string): Promise<User | undefined> {
+    const [user] = await this.db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await this.db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async updateUserSubscription(
+    userId: string,
+    stripeCustomerId: string,
+    stripeSubscriptionId: string,
+    tier: string,
+    status: string
+  ): Promise<User | undefined> {
+    const [user] = await this.db
+      .update(users)
+      .set({
+        stripeCustomerId,
+        stripeSubscriptionId,
+        subscriptionTier: tier,
+        subscriptionStatus: status,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async updateSubscriptionTier(userId: string, tier: string): Promise<User | undefined> {
+    const [user] = await this.db
+      .update(users)
+      .set({
+        subscriptionTier: tier,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  // Usage Tracking
+  async getOrCreateUsageTracking(
+    userId: string,
+    period: string,
+    periodType: 'daily' | 'monthly'
+  ): Promise<UsageTracking> {
+    // Try to get existing record
+    const [existing] = await this.db
+      .select()
+      .from(usageTracking)
+      .where(
+        and(
+          eq(usageTracking.userId, userId),
+          eq(usageTracking.period, period),
+          eq(usageTracking.periodType, periodType)
+        )
+      );
+
+    if (existing) {
+      return existing;
+    }
+
+    // Create new record
+    const [newRecord] = await this.db
+      .insert(usageTracking)
+      .values({
+        userId,
+        period,
+        periodType,
+        generationCount: 0,
+      })
+      .returning();
+
+    return newRecord;
+  }
+
+  async incrementGenerationCount(
+    userId: string,
+    period: string,
+    periodType: 'daily' | 'monthly'
+  ): Promise<UsageTracking> {
+    const record = await this.getOrCreateUsageTracking(userId, period, periodType);
+
+    const [updated] = await this.db
+      .update(usageTracking)
+      .set({
+        generationCount: record.generationCount + 1,
+        updatedAt: new Date(),
+      })
+      .where(eq(usageTracking.id, record.id))
+      .returning();
+
+    return updated;
+  }
+
+  async getUsageForPeriod(
+    userId: string,
+    period: string,
+    periodType: 'daily' | 'monthly'
+  ): Promise<UsageTracking | undefined> {
+    const [record] = await this.db
+      .select()
+      .from(usageTracking)
+      .where(
+        and(
+          eq(usageTracking.userId, userId),
+          eq(usageTracking.period, period),
+          eq(usageTracking.periodType, periodType)
+        )
+      );
+
+    return record;
   }
 }
 
