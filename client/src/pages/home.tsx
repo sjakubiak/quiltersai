@@ -127,19 +127,19 @@ export default function Home() {
               </div>
             ) : !designs || designs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20">
-                <div className="text-center space-y-4">
+                <div className="text-center space-y-4 max-w-2xl mx-auto">
                   <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-muted">
                     <Sparkles className="h-10 w-10 text-muted-foreground" />
                   </div>
                   <div className="space-y-2">
                     <h2 className="text-2xl font-semibold">Ready to create?</h2>
-                    <p className="text-muted-foreground max-w-md">
+                    <p className="text-muted-foreground mx-auto">
                       Describe your dream quilt in the prompt box. Include size, colors, style,
                       and any preferences. Our AI will generate unique design variations for you.
                     </p>
                   </div>
                   <div className="pt-4">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground mx-auto">
                       <strong>Try:</strong> "Modern twin quilt, teal and charcoal, budget under $120,
                       prefer rectangles, no triangles, intermediate skill"
                     </p>
