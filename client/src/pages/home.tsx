@@ -4,6 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { PromptForm } from "@/components/prompt-form";
 import { DesignGrid } from "@/components/design-grid";
 import { DesignDetail } from "@/components/design-detail";
+import { AuthHeader } from "@/components/auth-header";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Moon, Sun } from "lucide-react";
 import type { DesignVariation, DesignWithDetails } from "@shared/schema";
@@ -74,19 +75,22 @@ export default function Home() {
               <p className="text-xs text-muted-foreground">Design with intelligence</p>
             </div>
           </div>
-          <Button
-            data-testid="button-theme-toggle"
-            size="icon"
-            variant="ghost"
-            onClick={toggleTheme}
-            className="hover-elevate active-elevate-2"
-          >
-            {theme === "light" ? (
-              <Moon className="h-5 w-5" />
-            ) : (
-              <Sun className="h-5 w-5" />
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <AuthHeader />
+            <Button
+              data-testid="button-theme-toggle"
+              size="icon"
+              variant="ghost"
+              onClick={toggleTheme}
+              className="hover-elevate active-elevate-2"
+            >
+              {theme === "light" ? (
+                <Moon className="h-5 w-5" />
+              ) : (
+                <Sun className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
         </div>
       </header>
 
