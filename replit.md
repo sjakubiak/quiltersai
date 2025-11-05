@@ -225,6 +225,18 @@ The application follows a schema-first approach with horizontal batching:
 
 ## Recent Changes
 
+- **2025-11-05**: Complete Subscription System Implementation
+  - **Stripe Integration**: Full subscription system with three tiers (FREE, HOBBY $8/mo, PRO $18/mo)
+  - **Secure Payment Flow**: Users remain on FREE tier until webhook confirms payment, preventing free upgrades
+  - **Invoice Validation**: Webhook validates invoice.amount_paid > 0 before upgrading tier (prevents $0 trials/forgiven invoices)
+  - **Frontend Pages**: Pricing page (/pricing), Subscribe page (/subscribe?tier=TIER), Account page (/account) with billing portal
+  - **Tier Gates**: PDF export restricted to paid tiers, usage limits enforced per tier
+  - **Auth Integration**: Replit Auth with profile display, tier badges, and navigation
+  - **Query Parameter Fix**: Subscribe page correctly parses tier from URL for both HOBBY and PRO
+  - **Frontend Safety**: Separated client-safe pricing constants from server-only Stripe Price IDs to prevent process.env errors
+  - **PostgreSQL Sessions**: Migrated from memory store to connect-pg-simple for reliable session persistence
+  - End-to-end subscription testing passed successfully
+
 - **2025-11-03**: Major Feature Updates
   - **Database Migration**: Migrated from in-memory to PostgreSQL with Drizzle ORM, all data persists across restarts
   - **PDF Export**: Complete printable quilt pattern PDFs with cut lists, piecing instructions, calibration square, and material summaries using PDFKit
