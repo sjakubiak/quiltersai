@@ -82,8 +82,8 @@ function SubscribeForm({ tier }: { tier: string }) {
 }
 
 export default function Subscribe() {
-  const [, params] = useLocation();
-  const urlParams = new URLSearchParams(params?.split("?")[1] || "");
+  const [location] = useLocation();
+  const urlParams = new URLSearchParams(location.split("?")[1] || "");
   const tier = urlParams.get("tier") || "HOBBY";
   const [clientSecret, setClientSecret] = useState("");
   const [isLoading, setIsLoading] = useState(true);

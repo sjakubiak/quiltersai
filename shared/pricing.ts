@@ -11,7 +11,7 @@ export type SubscriptionTier = typeof SUBSCRIPTION_TIERS[keyof typeof SUBSCRIPTI
 export interface TierFeatures {
   name: string;
   priceMonthly: number;
-  stripePriceId?: string;
+  stripePriceId?: string; // Only populated server-side
   generationsPerDay?: number;
   generationsPerMonth?: number;
   pdfExport: boolean;
@@ -21,6 +21,7 @@ export interface TierFeatures {
   priorityQueue: boolean;
 }
 
+// Base tier features (safe for frontend)
 export const TIER_FEATURES: Record<SubscriptionTier, TierFeatures> = {
   FREE: {
     name: "Free",
@@ -35,7 +36,6 @@ export const TIER_FEATURES: Record<SubscriptionTier, TierFeatures> = {
   HOBBY: {
     name: "Hobby",
     priceMonthly: 8,
-    stripePriceId: process.env.STRIPE_PRICE_HOBBY,
     generationsPerMonth: 50,
     pdfExport: true,
     zipExport: false,
@@ -46,7 +46,6 @@ export const TIER_FEATURES: Record<SubscriptionTier, TierFeatures> = {
   PRO: {
     name: "Pro",
     priceMonthly: 18,
-    stripePriceId: process.env.STRIPE_PRICE_PRO,
     generationsPerMonth: 500,
     pdfExport: true,
     zipExport: true,
@@ -55,6 +54,22 @@ export const TIER_FEATURES: Record<SubscriptionTier, TierFeatures> = {
     priorityQueue: true,
   },
 };
+
+// Server-side only: Inject Stripe Price IDs from environment
+// This function should only be called on the backend
+export function getServerTierFeatures(): Record<SubscriptionTier, TierFeatures> {
+  return {
+    ...TIER_FEATURES,
+    HOBBY: {
+      ...TIER_FEATURES.HOBBY,
+      stripePriceId: process.env.STRIPE_PRICE_HOBBY,
+    },
+    PRO: {
+      ...TIER_FEATURES.PRO,
+      stripePriceId: process.env.STRIPE_PRICE_PRO,
+    },
+  };
+}
 
 export function getTierFeatures(tier: SubscriptionTier): TierFeatures {
   return TIER_FEATURES[tier];

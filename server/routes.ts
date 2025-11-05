@@ -9,7 +9,10 @@ import type { PromptInterpretRequest, GenerateDesignsRequest } from "@shared/sch
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import Stripe from "stripe";
-import { TIER_FEATURES, canExportPdf } from "@shared/pricing";
+import { getServerTierFeatures, canExportPdf } from "@shared/pricing";
+
+// Get server-side tier features with Stripe Price IDs
+const TIER_FEATURES = getServerTierFeatures();
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
