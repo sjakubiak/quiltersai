@@ -12,6 +12,7 @@ import { SignupIncentiveBanner } from "@/components/signup-incentive-banner";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Moon, Sun } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import type { DesignVariation, DesignWithDetails } from "@shared/schema";
 
 interface UsageData {
@@ -25,6 +26,7 @@ interface UsageData {
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
   const [selectedDesign, setSelectedDesign] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(
@@ -89,6 +91,14 @@ export default function Home() {
           setTimeout(() => setShowUpgradePrompt(true), 1500);
         }
       }
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.message || "Failed to generate designs. Please try again.";
+      toast({
+        title: "Generation Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     },
   });
 

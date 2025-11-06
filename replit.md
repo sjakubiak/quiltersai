@@ -228,17 +228,19 @@ The application follows a schema-first approach with horizontal batching:
 
 ## Recent Changes
 
-- **2025-11-06**: Signup Incentive System Implementation
+- **2025-11-06**: Signup Incentive System Implementation ✅ Fully Tested
   - **Tiered Free Limits**: Registered FREE users get 5 designs/day (vs. 3/day for anonymous users)
   - **SignupIncentiveBanner Component**: Prominent dismissible banner on home page for anonymous users highlighting account benefits (5/day, permanent saves, design history)
   - **Multi-Touchpoint Messaging**: 
     - Home page: SignupIncentiveBanner with clear value proposition and CTAs
-    - Usage Indicator: Shows signup prompt for anonymous users near limit, upgrade prompt for registered users
+    - Usage Indicator: Shows signup prompt for anonymous users near limit (limit === 3), upgrade prompt for registered users (limit === 5)
     - Pricing Page: Callout highlighting free account benefits (5/day, no credit card required)
-  - **Backend Logic**: getGenerationLimit() now accepts isRegistered parameter, correctly enforced in both /api/usage and /api/generate
+  - **Backend Logic**: getGenerationLimit() accepts isRegistered parameter, correctly enforced in both /api/usage and /api/generate
+  - **Error Handling**: Toast notifications on generation failures (429 rate limit, etc.)
   - **UX Balance**: Respectful "continue as guest" option, dismissible with localStorage persistence
   - **Value Messaging**: 67% more designs (5 vs 3) for simply creating a free account
-  - Architect-reviewed and approved for production
+  - **Testing**: End-to-end playwright tests verify anonymous→registered flow, limit enforcement, UI messaging
+  - Architect-reviewed and production-ready
 
 - **2025-11-06**: Comprehensive Conversion Rate Optimization (CRO)
   - **Enhanced Pricing Page**: Added social proof (5,000+ users), customer testimonials, trust signals (30-day money-back guarantee), and compelling value propositions
