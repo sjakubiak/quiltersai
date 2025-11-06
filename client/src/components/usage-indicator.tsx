@@ -115,7 +115,21 @@ export function UsageIndicator() {
               Almost out! Only {usage.remaining} design{usage.remaining !== 1 ? "s" : ""} left today.
             </p>
           </div>
-          {usage.tier === "FREE" && (
+          {usage.tier === "FREE" && usage.limit === 3 && (
+            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+              <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">
+                Create a free account → Get 5 designs/day!
+              </p>
+              <button
+                onClick={() => window.location.href = "/api/login"}
+                data-testid="button-signup-more-designs"
+                className="mt-1 w-full text-xs px-3 py-1.5 bg-blue-600 text-white rounded-md hover-elevate active-elevate-2 font-medium"
+              >
+                Sign Up Free
+              </button>
+            </div>
+          )}
+          {usage.tier === "FREE" && usage.limit === 5 && (
             <Link href="/pricing">
               <button
                 data-testid="button-upgrade-soon"

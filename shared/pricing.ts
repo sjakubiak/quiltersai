@@ -26,7 +26,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, TierFeatures> = {
   FREE: {
     name: "Free",
     priceMonthly: 0,
-    generationsPerDay: 3,
+    generationsPerDay: 5, // 5/day for registered users, 3/day for anonymous (handled in getGenerationLimit)
     pdfExport: false,
     zipExport: false,
     saveDesigns: true,
@@ -87,9 +87,17 @@ export function hasCommercialLicense(tier: SubscriptionTier): boolean {
   return TIER_FEATURES[tier].commercialLicense;
 }
 
-export function getGenerationLimit(tier: SubscriptionTier, periodType: 'daily' | 'monthly'): number | null {
+export function getGenerationLimit(
+  tier: SubscriptionTier, 
+  periodType: 'daily' | 'monthly',
+  isRegistered: boolean = false
+): number | null {
   const features = TIER_FEATURES[tier];
   if (periodType === 'daily') {
+    // Registered users get 5/day, anonymous users get 3/day on FREE tier
+    if (tier === SUBSCRIPTION_TIERS.FREE && features.generationsPerDay) {
+      return isRegistered ? 5 : 3;
+    }
     return features.generationsPerDay || null;
   }
   return features.generationsPerMonth || null;

@@ -72,7 +72,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const periodType = tier === SUBSCRIPTION_TIERS.FREE ? 'daily' : 'monthly';
       const period = periodType === 'daily' ? today : currentMonth;
-      const limit = getGenerationLimit(tier, periodType);
+      const isRegistered = !!user?.claims?.sub; // Check if user is logged in
+      const limit = getGenerationLimit(tier, periodType, isRegistered);
       
       const usage = await storage.getUsageForPeriod(userId, period, periodType);
       const used = usage?.generationCount || 0;
@@ -147,8 +148,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const periodType = tier === SUBSCRIPTION_TIERS.FREE ? 'daily' : 'monthly';
       const period = periodType === 'daily' ? today : currentMonth;
+      const isRegistered = !!user?.claims?.sub; // Check if user is logged in
       
-      const generationLimit = getGenerationLimit(tier, periodType);
+      const generationLimit = getGenerationLimit(tier, periodType, isRegistered);
       
       if (generationLimit !== null) {
         const usage = await storage.getUsageForPeriod(userId, period, periodType);

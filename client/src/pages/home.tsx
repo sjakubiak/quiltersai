@@ -8,8 +8,10 @@ import { AuthHeader } from "@/components/auth-header";
 import { FeedbackForm } from "@/components/feedback-form";
 import { UsageIndicator } from "@/components/usage-indicator";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
+import { SignupIncentiveBanner } from "@/components/signup-incentive-banner";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Moon, Sun } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import type { DesignVariation, DesignWithDetails } from "@shared/schema";
 
 interface UsageData {
@@ -22,6 +24,7 @@ interface UsageData {
 }
 
 export default function Home() {
+  const { user, isAuthenticated } = useAuth();
   const [selectedDesign, setSelectedDesign] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(
@@ -124,6 +127,13 @@ export default function Home() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Sign-up Incentive Banner for Anonymous Users */}
+        {!isAuthenticated && (
+          <div className="mb-6">
+            <SignupIncentiveBanner />
+          </div>
+        )}
+
         <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
           {/* Left Panel - Prompt Form */}
           <aside className="lg:sticky lg:top-24 lg:h-fit space-y-4">
