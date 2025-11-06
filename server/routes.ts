@@ -442,8 +442,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/stripe/config-check', async (req, res) => {
     const hobbyPriceId = process.env.TESTING_STRIPE_PRICE_HOBBY || process.env.STRIPE_PRICE_HOBBY;
     const proPriceId = process.env.TESTING_STRIPE_PRICE_PRO || process.env.STRIPE_PRICE_PRO;
+    const secretKey = process.env.TESTING_STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
     
     try {
+      // Get account info to verify which Stripe account we're connected to
+      let accountInfo = null;
+      try {
+        const account = await stripe.accounts.retrieve();
+        accountInfo = {
+          id: account.id,
+          email: account.email,
+          country: account.country,
+          type: account.type
+        };
+      } catch (err: any) {
+        accountInfo = { error: err.message };
+      }
+      
       let hobbyPriceDetails = null;
       let proPriceDetails = null;
       
@@ -480,9 +495,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({
+        stripeMode: secretKey?.startsWith('sk_test') ? 'TEST' : 'LIVE',
+        accountInfo,
         configured: {
+          TESTING_STRIPE_SECRET_KEY: !!process.env.TESTING_STRIPE_SECRET_KEY,
           TESTING_STRIPE_PRICE_HOBBY: !!process.env.TESTING_STRIPE_PRICE_HOBBY,
           TESTING_STRIPE_PRICE_PRO: !!process.env.TESTING_STRIPE_PRICE_PRO,
+          STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
           STRIPE_PRICE_HOBBY: !!process.env.STRIPE_PRICE_HOBBY,
           STRIPE_PRICE_PRO: !!process.env.STRIPE_PRICE_PRO,
         },
@@ -493,7 +512,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         priceDetails: {
           hobby: hobbyPriceDetails,
           pro: proPriceDetails
-        }
+        },
+        diagnosis: !hobbyPriceDetails || hobbyPriceDetails.error 
+          ? "⚠️ Price IDs don't exist in the connected Stripe account. Verify that your TESTING_STRIPE_SECRET_KEY and price IDs are from the SAME Stripe account."
+          : "✅ All prices found successfully!"
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
