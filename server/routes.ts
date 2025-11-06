@@ -559,10 +559,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If user already has an active subscription, return existing
       if (user.stripeSubscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId, {
-          expand: ['latest_invoice.payment_intent'],
+          expand: ['latest_invoice.payment_intent', 'pending_setup_intent'],
         });
         
         if (subscription.status === 'active' || subscription.status === 'trialing') {
+          console.log('✅ User already has active subscription:', subscription.id);
           const invoice = subscription.latest_invoice as Stripe.Invoice;
           const paymentIntent = invoice?.payment_intent as Stripe.PaymentIntent;
           
@@ -573,16 +574,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // If subscription is incomplete, return it to resume payment
-        if (subscription.status === 'incomplete') {
+        // If subscription is incomplete, check if it has a valid payment intent
+        if (subscription.status === 'incomplete' || subscription.status === 'incomplete_expired') {
+          console.log('⚠️ User has incomplete subscription:', subscription.id);
           const invoice = subscription.latest_invoice as Stripe.Invoice;
           const paymentIntent = invoice?.payment_intent as Stripe.PaymentIntent;
+          const setupIntent = subscription.pending_setup_intent as Stripe.SetupIntent;
           
-          return res.json({
-            subscriptionId: subscription.id,
-            clientSecret: paymentIntent?.client_secret,
-            status: subscription.status,
-          });
+          // Check if we have a valid client secret from either intent
+          const clientSecret = paymentIntent?.client_secret || setupIntent?.client_secret;
+          
+          if (clientSecret) {
+            console.log('✅ Found existing client secret, resuming payment');
+            return res.json({
+              subscriptionId: subscription.id,
+              clientSecret,
+              intentType: paymentIntent?.client_secret ? 'payment' : 'setup',
+              status: subscription.status,
+            });
+          }
+          
+          // No valid client secret - cancel old subscription and create new one
+          console.log('❌ Incomplete subscription has no valid payment intent, canceling...');
+          await stripe.subscriptions.cancel(subscription.id);
+          console.log('✅ Old subscription canceled, will create new one');
         }
       }
 
