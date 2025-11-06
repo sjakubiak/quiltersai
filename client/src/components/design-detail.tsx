@@ -101,51 +101,54 @@ export function DesignDetail({ design, onClose }: DesignDetailProps) {
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden p-0">
+      <DialogContent className="max-w-full h-[100vh] md:max-w-6xl md:max-h-[90vh] md:rounded-lg overflow-hidden p-0">
         {/* Header */}
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 space-y-1">
-              <DialogTitle className="text-2xl" data-testid="text-design-detail-title">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
+            <div className="flex-1 min-w-0 space-y-1">
+              <DialogTitle className="text-lg sm:text-2xl truncate" data-testid="text-design-detail-title">
                 {design.design.name}
               </DialogTitle>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">{design.design.blockPattern}</Badge>
-                <Badge variant="outline">{design.design.layoutStrategy}</Badge>
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <Badge variant="secondary" className="text-xs">{design.design.blockPattern}</Badge>
+                <Badge variant="outline" className="text-xs">{design.design.layoutStrategy}</Badge>
                 {design.design.scrapFriendly === 1 && (
-                  <Badge variant="outline" className="border-primary text-primary">
+                  <Badge variant="outline" className="border-primary text-primary text-xs">
                     Scrap Friendly
                   </Badge>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               <Button
                 data-testid="button-save-design"
                 size="icon"
                 variant="ghost"
                 onClick={handleSave}
                 disabled={saveMutation.isPending || isSaved}
-                className="hover-elevate active-elevate-2"
+                className="hover-elevate active-elevate-2 min-h-[44px] min-w-[44px] sm:h-9 sm:w-9"
               >
                 {isSaved ? <Check className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
               </Button>
               <Button
                 data-testid="button-export-pdf"
                 variant="outline"
+                size="sm"
                 onClick={handleExportPDF}
                 disabled={exportMutation.isPending}
-                className="hover-elevate active-elevate-2"
+                className="hover-elevate active-elevate-2 min-h-[44px]"
               >
                 {exportMutation.isPending ? (
                   <>
                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
-                    Exporting...
+                    <span className="hidden sm:inline">Exporting...</span>
+                    <span className="sm:hidden">...</span>
                   </>
                 ) : (
                   <>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export PDF
+                    <Download className="mr-1 sm:mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">Export PDF</span>
+                    <span className="sm:hidden">PDF</span>
                   </>
                 )}
               </Button>
@@ -154,7 +157,7 @@ export function DesignDetail({ design, onClose }: DesignDetailProps) {
                 size="icon"
                 variant="ghost"
                 onClick={onClose}
-                className="hover-elevate active-elevate-2"
+                className="hover-elevate active-elevate-2 min-h-[44px] min-w-[44px] sm:h-9 sm:w-9"
               >
                 <X className="h-5 w-5" />
               </Button>
@@ -163,22 +166,24 @@ export function DesignDetail({ design, onClose }: DesignDetailProps) {
         </DialogHeader>
 
         {/* Tabs Content */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="w-full justify-start gap-2 bg-muted p-1">
-              <TabsTrigger value="overview" data-testid="tab-overview" className="flex-1">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="cutlist" data-testid="tab-cutlist" className="flex-1">
-                Cut List
-              </TabsTrigger>
-              <TabsTrigger value="steps" data-testid="tab-steps" className="flex-1">
-                Piecing Steps
-              </TabsTrigger>
-              <TabsTrigger value="layout" data-testid="tab-layout" className="flex-1">
-                Assembly Layout
-              </TabsTrigger>
-            </TabsList>
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+            <div className="sticky top-0 bg-background z-10 py-3 sm:py-4 -mx-4 sm:-mx-6 px-4 sm:px-6">
+              <TabsList className="w-full justify-start bg-muted p-1 overflow-x-auto flex-nowrap">
+                <TabsTrigger value="overview" data-testid="tab-overview" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger value="cutlist" data-testid="tab-cutlist" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">
+                  Cut List
+                </TabsTrigger>
+                <TabsTrigger value="steps" data-testid="tab-steps" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">
+                  Steps
+                </TabsTrigger>
+                <TabsTrigger value="layout" data-testid="tab-layout" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">
+                  Layout
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="overview" className="space-y-6">
               <QuiltOverview design={design} />

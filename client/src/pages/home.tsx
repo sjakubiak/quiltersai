@@ -106,17 +106,17 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary">
-              <Sparkles className="h-5 w-5 text-primary-foreground" />
+        <div className="container mx-auto flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4 max-w-7xl">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md bg-primary shrink-0">
+              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
             </div>
-            <div>
-              <h1 className="text-xl font-semibold tracking-tight">Quilter's AI</h1>
-              <p className="text-xs text-muted-foreground">Design with intelligence</p>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-semibold tracking-tight truncate">Quilter's AI</h1>
+              <p className="text-xs text-muted-foreground hidden sm:block">Design with intelligence</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <AuthHeader />
             <FeedbackForm />
             <Button
@@ -124,7 +124,7 @@ export default function Home() {
               size="icon"
               variant="ghost"
               onClick={toggleTheme}
-              className="hover-elevate active-elevate-2"
+              className="hover-elevate active-elevate-2 min-h-[44px] min-w-[44px] sm:h-9 sm:w-9"
             >
               {theme === "light" ? (
                 <Moon className="h-5 w-5" />
@@ -136,17 +136,17 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-7xl">
         {/* Sign-up Incentive Banner for Anonymous Users */}
         {!isAuthenticated && (
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <SignupIncentiveBanner />
           </div>
         )}
 
-        <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
+        <div className="grid gap-4 sm:gap-6 lg:gap-8 grid-cols-1 lg:grid-cols-[320px_1fr]">
           {/* Left Panel - Prompt Form */}
-          <aside className="lg:sticky lg:top-24 lg:h-fit space-y-4">
+          <aside className="lg:sticky lg:top-24 lg:h-fit space-y-3 sm:space-y-4">
             <PromptForm
               onGenerate={(prompt) => generateMutation.mutate(prompt)}
               isGenerating={generateMutation.isPending}
@@ -155,7 +155,7 @@ export default function Home() {
           </aside>
 
           {/* Main Content - Design Grid */}
-          <main>
+          <main className="min-w-0">
             {isLoading ? (
               <div className="space-y-6">
                 <div className="flex items-center justify-center py-20">

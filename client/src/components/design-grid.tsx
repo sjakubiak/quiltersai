@@ -8,17 +8,17 @@ interface DesignGridProps {
 
 export function DesignGrid({ designs, onSelectDesign }: DesignGridProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Design Variations</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">Design Variations</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             {designs.length} unique {designs.length === 1 ? "design" : "designs"} generated
           </p>
         </div>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
         {designs.map((design) => (
           <DesignCard
             key={design.id}

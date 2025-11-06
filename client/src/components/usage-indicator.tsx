@@ -32,11 +32,11 @@ export function UsageIndicator() {
   const isAtLimit = usage.remaining === 0;
 
   return (
-    <div data-testid="usage-indicator" className="space-y-2 p-4 rounded-lg border bg-card">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">
+    <div data-testid="usage-indicator" className="space-y-2 p-3 sm:p-4 rounded-lg border bg-card">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <Sparkles className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-xs sm:text-sm font-medium truncate">
             {usage.used} of {usage.limit} designs used
           </span>
         </div>
@@ -116,14 +116,14 @@ export function UsageIndicator() {
             </p>
           </div>
           {usage.tier === "FREE" && usage.limit === 3 && (
-            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
-              <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">
+            <div className="p-2 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+              <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1.5">
                 Create a free account → Get 5 designs/day!
               </p>
               <button
                 onClick={() => window.location.href = "/api/login"}
                 data-testid="button-signup-more-designs"
-                className="mt-1 w-full text-xs px-3 py-1.5 bg-blue-600 text-white rounded-md hover-elevate active-elevate-2 font-medium"
+                className="w-full text-xs px-3 py-2 bg-blue-600 text-white rounded-md hover-elevate active-elevate-2 font-medium"
               >
                 Sign Up Free
               </button>
@@ -133,10 +133,10 @@ export function UsageIndicator() {
             <Link href="/pricing">
               <button
                 data-testid="button-upgrade-soon"
-                className="mt-1 w-full text-xs px-3 py-2 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 text-primary rounded-md hover-elevate active-elevate-2 font-medium flex items-center justify-center gap-2"
+                className="w-full text-xs px-3 py-2 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 text-primary rounded-md hover-elevate active-elevate-2 font-medium flex items-center justify-center gap-2"
               >
-                <Zap className="h-3.5 w-3.5" />
-                Get 50/month for less than 2 yards of fabric!
+                <Zap className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">Get 50/month - Less than 2 yards!</span>
               </button>
             </Link>
           )}

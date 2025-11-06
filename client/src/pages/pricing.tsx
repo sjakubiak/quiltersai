@@ -20,24 +20,25 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-8 sm:py-12 lg:py-16 max-w-7xl">
         {/* Header */}
-        <div className="mx-auto max-w-3xl text-center mb-12">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">Over 5,000 quilters trust Quilter's AI</span>
+        <div className="mx-auto max-w-3xl text-center mb-8 sm:mb-12">
+          <div className="mb-3 sm:mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 sm:px-4 py-1.5 sm:py-2">
+            <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+            <span className="text-xs sm:text-sm font-medium">Over 5,000 quilters trust Quilter's AI</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
-            Design More Quilts,<br />Spend Less Time Planning
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-3 sm:mb-4">
+            Design More Quilts,<br className="hidden sm:block" />
+            <span className="sm:hidden"> </span>Spend Less Time Planning
           </h1>
-          <p className="text-lg text-muted-foreground mb-6">
+          <p className="text-sm sm:text-base lg:text-lg text-muted-foreground mb-4 sm:mb-6 px-4">
             From idea to complete pattern in seconds. Join thousands of quilters creating beautiful designs with AI.
           </p>
           
           {/* Free Account Benefits Callout */}
-          <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200 dark:border-blue-800">
-            <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-              <Check className="inline h-4 w-4 mr-1" />
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200 dark:border-blue-800">
+            <p className="text-xs sm:text-sm font-medium text-blue-900 dark:text-blue-100 mb-1 sm:mb-2">
+              <Check className="inline h-3 w-3 sm:h-4 sm:w-4 mr-1" />
               Create a free account and get <strong>5 designs daily</strong> (vs. 3 for guests) — no credit card required!
             </p>
             <p className="text-xs text-blue-700 dark:text-blue-300">
@@ -46,24 +47,24 @@ export default function Pricing() {
           </div>
 
           {/* Trust Signals */}
-          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground mb-8">
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-primary" />
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 lg:gap-6 text-xs sm:text-sm text-muted-foreground mb-6 sm:mb-8">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-primary shrink-0" />
               <span>30-day money back</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" />
-              <span>5,000+ happy quilters</span>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Users className="h-3 w-3 sm:h-4 sm:w-4 text-primary shrink-0" />
+              <span>5,000+ quilters</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-primary shrink-0" />
               <span>Cancel anytime</span>
             </div>
           </div>
         </div>
 
         {/* Pricing Cards */}
-        <div className="mx-auto max-w-6xl grid gap-8 md:grid-cols-3">
+        <div className="mx-auto max-w-6xl grid gap-4 sm:gap-6 lg:gap-8 grid-cols-1 md:grid-cols-3">
           {tiers.map(({ id, popular }) => {
             const features = TIER_FEATURES[id];
             const isCurrentTier = user?.subscriptionTier === id;
@@ -71,29 +72,29 @@ export default function Pricing() {
             return (
               <Card
                 key={id}
-                className={`relative flex flex-col p-8 ${
+                className={`relative flex flex-col p-4 sm:p-6 lg:p-8 ${
                   popular ? "border-primary shadow-lg" : ""
                 }`}
                 data-testid={`card-tier-${id.toLowerCase()}`}
               >
                 {popular && (
                   <Badge
-                    className="absolute -top-3 left-1/2 -translate-x-1/2"
+                    className="absolute -top-2 sm:-top-3 left-1/2 -translate-x-1/2 text-xs"
                     data-testid="badge-popular"
                   >
                     Most Popular
                   </Badge>
                 )}
 
-                <div className="mb-8">
-                  <h3 className="text-2xl font-bold mb-2" data-testid={`text-tier-name-${id.toLowerCase()}`}>
+                <div className="mb-6 sm:mb-8">
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2" data-testid={`text-tier-name-${id.toLowerCase()}`}>
                     {features.name}
                   </h3>
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-4xl font-bold" data-testid={`text-price-${id.toLowerCase()}`}>
+                  <div className="flex items-baseline gap-1.5 sm:gap-2 mb-2">
+                    <span className="text-3xl sm:text-4xl font-bold" data-testid={`text-price-${id.toLowerCase()}`}>
                       ${features.priceMonthly}
                     </span>
-                    <span className="text-muted-foreground">/month CAD</span>
+                    <span className="text-sm sm:text-base text-muted-foreground">/month CAD</span>
                   </div>
                   {id === "HOBBY" && (
                     <p className="text-xs text-muted-foreground mb-3">Less than the cost of 2 yards of fabric!</p>
