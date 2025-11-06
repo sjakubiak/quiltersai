@@ -10,7 +10,17 @@ import { TIER_FEATURES } from "@shared/pricing";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+// Use production keys in production, testing keys in development
+const getStripePublicKey = () => {
+  // In production mode, use production key
+  if (import.meta.env.PROD) {
+    return import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+  }
+  // In development, prefer testing key but fallback to production key
+  return import.meta.env.VITE_TESTING_STRIPE_PUBLIC_KEY || import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+};
+
+const stripePromise = loadStripe(getStripePublicKey());
 
 function SubscribeForm({ tier, intentType }: { tier: string; intentType: 'payment' | 'setup' }) {
   const stripe = useStripe();
@@ -51,14 +61,16 @@ function SubscribeForm({ tier, intentType }: { tier: string; intentType: 'paymen
           description: result.error.message || "An error occurred during payment processing",
           variant: "destructive",
         });
-      } else if (result.setupIntent || result.paymentIntent) {
+      } else {
         // Success! For test cards, Stripe may not redirect automatically
         // Navigate to account page manually with the intent ID
-        const intentId = result.setupIntent?.id || result.paymentIntent?.id;
-        console.log("Stripe confirmation succeeded, redirecting to /account with intent:", intentId);
-        setLocation(`/account?setup_intent=${intentId}`);
+        const intent: any = 'setupIntent' in result ? result.setupIntent : 'paymentIntent' in result ? result.paymentIntent : null;
+        if (intent?.id) {
+          console.log("Stripe confirmation succeeded, redirecting to /account with intent:", intent.id);
+          setLocation(`/account?setup_intent=${intent.id}`);
+        }
+        // If no intent is returned, Stripe will redirect automatically via return_url
       }
-      // If no error and no intent (shouldn't happen), Stripe will redirect automatically
     } catch (error: any) {
       console.error("Exception during confirmation:", error);
       setIsProcessing(false);
