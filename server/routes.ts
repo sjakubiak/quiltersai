@@ -693,7 +693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       let clientSecret: string | undefined;
-      let intentType: 'payment' | 'setup';
+      let intentType: 'payment' | 'setup' | undefined;
       
       if (paymentIntent?.client_secret) {
         clientSecret = paymentIntent.client_secret;
@@ -711,7 +711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hasPaymentIntent: !!paymentIntent,
         hasSetupIntent: !!setupIntent,
         hasClientSecret: !!clientSecret,
-        intentType: clientSecret ? intentType : 'none',
+        intentType: intentType || 'none',
         priceId: tierFeatures.stripePriceId,
       });
 

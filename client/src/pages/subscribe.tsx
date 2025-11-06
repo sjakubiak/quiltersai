@@ -138,27 +138,57 @@ export default function Subscribe() {
       return;
     }
 
-    // Create subscription on mount
+    // Create subscription on mount with timeout protection
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     apiRequest("POST", "/api/subscription/create", { tier })
-      .then((res) => res.json())
+      .then((res) => {
+        clearTimeout(timeoutId);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        return res.json();
+      })
       .then((data) => {
-        if (data.error) {
-          throw new Error(data.error);
+        if (data.error || data.message) {
+          throw new Error(data.error || data.message || "Failed to create subscription");
+        }
+        if (!data.clientSecret) {
+          throw new Error("No client secret received from server");
         }
         setClientSecret(data.clientSecret);
-        setIntentType(data.intentType || 'payment');
+        setIntentType(data.intentType || 'setup');
         setIsLoading(false);
       })
       .catch((error) => {
+        clearTimeout(timeoutId);
         console.error("Error creating subscription:", error);
+        
+        let errorMessage = "Failed to initialize subscription";
+        if (error.name === 'AbortError') {
+          errorMessage = "Request timed out. Please try again.";
+        } else if (error.message?.includes("Unauthorized")) {
+          errorMessage = "Please log in to subscribe";
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
         toast({
           title: "Error",
-          description: error.message || "Failed to initialize subscription",
+          description: errorMessage,
           variant: "destructive",
         });
-        setLocation("/pricing");
+        
+        // Always redirect back to pricing on error
+        setTimeout(() => setLocation("/pricing"), 2000);
       });
-  }, [tier]);
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [tier, toast, setLocation]);
 
   const tierFeatures = TIER_FEATURES[tier as keyof typeof TIER_FEATURES];
 
