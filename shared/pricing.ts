@@ -57,16 +57,17 @@ export const TIER_FEATURES: Record<SubscriptionTier, TierFeatures> = {
 
 // Server-side only: Inject Stripe Price IDs from environment
 // This function should only be called on the backend
+// Supports both testing and production price IDs
 export function getServerTierFeatures(): Record<SubscriptionTier, TierFeatures> {
   return {
     ...TIER_FEATURES,
     HOBBY: {
       ...TIER_FEATURES.HOBBY,
-      stripePriceId: process.env.STRIPE_PRICE_HOBBY,
+      stripePriceId: process.env.TESTING_STRIPE_PRICE_HOBBY || process.env.STRIPE_PRICE_HOBBY,
     },
     PRO: {
       ...TIER_FEATURES.PRO,
-      stripePriceId: process.env.STRIPE_PRICE_PRO,
+      stripePriceId: process.env.TESTING_STRIPE_PRICE_PRO || process.env.STRIPE_PRICE_PRO,
     },
   };
 }
