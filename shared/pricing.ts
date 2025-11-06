@@ -59,15 +59,21 @@ export const TIER_FEATURES: Record<SubscriptionTier, TierFeatures> = {
 // This function should only be called on the backend
 // Supports both testing and production price IDs
 export function getServerTierFeatures(): Record<SubscriptionTier, TierFeatures> {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   return {
     ...TIER_FEATURES,
     HOBBY: {
       ...TIER_FEATURES.HOBBY,
-      stripePriceId: process.env.TESTING_STRIPE_PRICE_HOBBY || process.env.STRIPE_PRICE_HOBBY,
+      stripePriceId: isProduction
+        ? (process.env.STRIPE_PRICE_HOBBY || process.env.TESTING_STRIPE_PRICE_HOBBY)
+        : (process.env.TESTING_STRIPE_PRICE_HOBBY || process.env.STRIPE_PRICE_HOBBY),
     },
     PRO: {
       ...TIER_FEATURES.PRO,
-      stripePriceId: process.env.TESTING_STRIPE_PRICE_PRO || process.env.STRIPE_PRICE_PRO,
+      stripePriceId: isProduction
+        ? (process.env.STRIPE_PRICE_PRO || process.env.TESTING_STRIPE_PRICE_PRO)
+        : (process.env.TESTING_STRIPE_PRICE_PRO || process.env.STRIPE_PRICE_PRO),
     },
   };
 }

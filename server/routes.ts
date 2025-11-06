@@ -22,13 +22,22 @@ import { getServerTierFeatures, canExportPdf, SUBSCRIPTION_TIERS, type Subscript
 // Get server-side tier features with Stripe Price IDs
 const TIER_FEATURES = getServerTierFeatures();
 
-// Use test key if available, otherwise use production key
-const stripeSecretKey = process.env.TESTING_STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
+// Use production keys in production, test keys in development
+const isProduction = process.env.NODE_ENV === 'production';
+const stripeSecretKey = isProduction 
+  ? (process.env.STRIPE_SECRET_KEY || process.env.TESTING_STRIPE_SECRET_KEY)
+  : (process.env.TESTING_STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY);
+
 if (!stripeSecretKey) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY or TESTING_STRIPE_SECRET_KEY');
 }
 
-console.log('🔑 Stripe mode:', stripeSecretKey.startsWith('sk_test') ? 'TEST' : 'LIVE');
+const stripeMode = stripeSecretKey.startsWith('sk_test') ? 'TEST' : 'LIVE';
+console.log('🔑 Stripe mode:', stripeMode, `(NODE_ENV: ${process.env.NODE_ENV || 'development'})`);
+
+if (isProduction && stripeMode === 'TEST') {
+  console.warn('⚠️  WARNING: Running in production with TEST Stripe keys!');
+}
 
 const stripe = new Stripe(stripeSecretKey, {
   apiVersion: "2025-10-29.clover",
