@@ -228,6 +228,15 @@ The application follows a schema-first approach with horizontal batching:
 
 ## Recent Changes
 
+- **2025-11-06**: Comprehensive Conversion Rate Optimization (CRO)
+  - **Enhanced Pricing Page**: Added social proof (5,000+ users), customer testimonials, trust signals (30-day money-back guarantee), and compelling value propositions
+  - **Improved CTAs**: Action-oriented button copy ("Start 30-Day Trial", "Upgrade to Hobby →", "Unlock 50 Designs/Month - $8")
+  - **Strategic Upgrade Prompts**: Modal appears after 2nd/3rd generation for FREE users with benefits comparison, pricing highlight, and urgency messaging
+  - **Usage Indicator Enhancement**: Clear value propositions in upgrade CTAs with price anchoring ("Less than 2 yards of fabric")
+  - **Psychology-Driven Elements**: Leverages social proof, urgency, scarcity, anchoring, and risk reversal
+  - **Design Compliance**: All emojis replaced with lucide-react icons (AlertCircle, Sparkles, Check, Flame, Zap) per design guidelines
+  - Architect-reviewed and approved for production
+
 - **2025-11-05**: Usage Limit Enforcement System
   - **Tier-Based Limits**: FREE (3/day), HOBBY (50/month), PRO (500/month)
   - **Anonymous Tracking**: Session-based tracking for non-logged-in users
