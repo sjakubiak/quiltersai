@@ -536,11 +536,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
    * Create or retrieve a Stripe subscription
    */
   app.post('/api/subscription/create', isAuthenticated, async (req: any, res) => {
+    console.log('🚀 POST /api/subscription/create called');
+    console.log('  Request body:', req.body);
+    console.log('  User:', req.user?.claims?.sub || 'NO USER');
+    
     try {
       const userId = req.user.claims.sub;
       const { tier } = req.body; // "HOBBY" or "PRO"
 
+      console.log(`📝 Creating subscription for user ${userId}, tier: ${tier}`);
+
       if (!tier || (tier !== "HOBBY" && tier !== "PRO")) {
+        console.error('❌ Invalid tier:', tier);
         return res.status(400).json({ error: "Invalid tier. Must be HOBBY or PRO." });
       }
 
