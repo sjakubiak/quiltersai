@@ -23,27 +23,48 @@ function SubscribeForm({ tier, intentType }: { tier: string; intentType: 'paymen
     e.preventDefault();
 
     if (!stripe || !elements) {
+      console.log("Stripe or elements not ready");
       return;
     }
 
     setIsProcessing(true);
+    console.log(`Starting ${intentType} confirmation...`);
 
-    // Use confirmPayment for payment intents, confirmSetup for setup intents
-    const confirmMethod = intentType === 'setup' ? stripe.confirmSetup : stripe.confirmPayment;
-    
-    const { error } = await confirmMethod({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/account`,
-      },
-    });
+    try {
+      // Use confirmPayment for payment intents, confirmSetup for setup intents
+      const confirmMethod = intentType === 'setup' ? stripe.confirmSetup : stripe.confirmPayment;
+      
+      const result = await confirmMethod({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/account`,
+        },
+      });
 
-    setIsProcessing(false);
+      console.log("Stripe confirmation result:", result);
 
-    if (error) {
+      if (result.error) {
+        console.error("Stripe confirmation error:", result.error);
+        setIsProcessing(false);
+        toast({
+          title: intentType === 'setup' ? "Setup Failed" : "Payment Failed",
+          description: result.error.message || "An error occurred during payment processing",
+          variant: "destructive",
+        });
+      } else if (result.setupIntent || result.paymentIntent) {
+        // Success! For test cards, Stripe may not redirect automatically
+        // Navigate to account page manually with the intent ID
+        const intentId = result.setupIntent?.id || result.paymentIntent?.id;
+        console.log("Stripe confirmation succeeded, redirecting to /account with intent:", intentId);
+        setLocation(`/account?setup_intent=${intentId}`);
+      }
+      // If no error and no intent (shouldn't happen), Stripe will redirect automatically
+    } catch (error: any) {
+      console.error("Exception during confirmation:", error);
+      setIsProcessing(false);
       toast({
-        title: intentType === 'setup' ? "Setup Failed" : "Payment Failed",
-        description: error.message,
+        title: "Error",
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     }

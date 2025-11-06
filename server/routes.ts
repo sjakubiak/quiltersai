@@ -787,6 +787,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 1. Get the subscription
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       
+      // Security check: Verify the subscription belongs to the authenticated user
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+      
+      if (user.stripeCustomerId && subscription.customer !== user.stripeCustomerId) {
+        console.error(`⚠️ Security: User ${userId} attempted to complete subscription ${subscriptionId} belonging to different customer`);
+        return res.status(403).json({ 
+          error: "This subscription does not belong to your account",
+          debug: { userId, subscriptionCustomer: subscription.customer, userCustomer: user.stripeCustomerId }
+        });
+      }
+      
       // 2. Attach payment method to customer (may already be attached)
       try {
         await stripe.paymentMethods.attach(paymentMethod, {
@@ -823,6 +837,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 6. Get updated subscription status
       const updatedSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+      
+      // 7. Upgrade user tier directly (don't rely on webhooks in test environment)
+      if (updatedSubscription.status === 'active' || updatedSubscription.status === 'trialing') {
+        const requestedTier = setupIntent.metadata.requestedTier || updatedSubscription.metadata.requestedTier;
+        
+        if (requestedTier && (requestedTier === 'HOBBY' || requestedTier === 'PRO')) {
+          await storage.updateUserSubscription(
+            userId,
+            subscription.customer as string,
+            subscriptionId,
+            requestedTier,
+            updatedSubscription.status
+          );
+          console.log(`✅ User ${userId} upgraded to ${requestedTier} tier (status: ${updatedSubscription.status})`);
+        }
+      }
       
       res.json({
         success: true,

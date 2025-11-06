@@ -23,10 +23,23 @@ export default function Account() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const setupIntentId = urlParams.get('setup_intent');
-    const setupIntentClientSecret = urlParams.get('setup_intent_client_secret');
+    const redirectStatus = urlParams.get('redirect_status');
     
-    if (setupIntentId && setupIntentClientSecret && !isCompletingSubscription) {
+    // Only process if we have a setup_intent and haven't already started processing
+    if (setupIntentId && !isCompletingSubscription) {
       setIsCompletingSubscription(true);
+      
+      // Check if there was an error during Stripe redirect
+      if (redirectStatus === 'failed') {
+        toast({
+          title: "Payment Failed",
+          description: "There was an error processing your payment. Please try again.",
+          variant: "destructive",
+        });
+        window.history.replaceState({}, '', '/account');
+        setIsCompletingSubscription(false);
+        return;
+      }
       
       // Complete the subscription payment
       apiRequest("POST", "/api/subscription/complete", { setupIntentId })
