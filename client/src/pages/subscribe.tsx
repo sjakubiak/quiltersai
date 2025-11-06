@@ -12,7 +12,7 @@ import { Link } from "wouter";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
-function SubscribeForm({ tier }: { tier: string }) {
+function SubscribeForm({ tier, intentType }: { tier: string; intentType: 'payment' | 'setup' }) {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
@@ -28,7 +28,10 @@ function SubscribeForm({ tier }: { tier: string }) {
 
     setIsProcessing(true);
 
-    const { error } = await stripe.confirmPayment({
+    // Use confirmPayment for payment intents, confirmSetup for setup intents
+    const confirmMethod = intentType === 'setup' ? stripe.confirmSetup : stripe.confirmPayment;
+    
+    const { error } = await confirmMethod({
       elements,
       confirmParams: {
         return_url: `${window.location.origin}/account`,
@@ -39,7 +42,7 @@ function SubscribeForm({ tier }: { tier: string }) {
 
     if (error) {
       toast({
-        title: "Payment Failed",
+        title: intentType === 'setup' ? "Setup Failed" : "Payment Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -86,6 +89,7 @@ export default function Subscribe() {
   const urlParams = new URLSearchParams(location.split("?")[1] || "");
   const tier = urlParams.get("tier") || "HOBBY";
   const [clientSecret, setClientSecret] = useState("");
+  const [intentType, setIntentType] = useState<'payment' | 'setup'>('payment');
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -109,6 +113,7 @@ export default function Subscribe() {
           throw new Error(data.error);
         }
         setClientSecret(data.clientSecret);
+        setIntentType(data.intentType || 'payment');
         setIsLoading(false);
       })
       .catch((error) => {
@@ -161,7 +166,7 @@ export default function Subscribe() {
                   },
                 }}
               >
-                <SubscribeForm tier={tier} />
+                <SubscribeForm tier={tier} intentType={intentType} />
               </Elements>
             </Card>
 

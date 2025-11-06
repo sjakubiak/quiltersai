@@ -508,12 +508,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create subscription with userId in metadata for webhook lookup
+      // Expand both payment_intent AND setup_intent (Stripe creates one or the other)
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
         items: [{ price: tierFeatures.stripePriceId }],
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
-        expand: ['latest_invoice.payment_intent'],
+        expand: ['latest_invoice.payment_intent', 'pending_setup_intent'],
         metadata: { userId, requestedTier: tier }, // Store for webhook
       });
 
@@ -526,12 +527,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscription.status // Will be "incomplete" initially
       );
 
+      // Stripe creates EITHER a PaymentIntent OR SetupIntent depending on the subscription
       const invoice = subscription.latest_invoice as Stripe.Invoice;
       const paymentIntent = invoice?.payment_intent as Stripe.PaymentIntent;
+      const setupIntent = subscription.pending_setup_intent as Stripe.SetupIntent;
+      
+      let clientSecret: string | undefined;
+      let intentType: 'payment' | 'setup';
+      
+      if (paymentIntent?.client_secret) {
+        clientSecret = paymentIntent.client_secret;
+        intentType = 'payment';
+      } else if (setupIntent?.client_secret) {
+        clientSecret = setupIntent.client_secret;
+        intentType = 'setup';
+      }
+
+      console.log('📋 Subscription created:', {
+        subscriptionId: subscription.id,
+        status: subscription.status,
+        hasInvoice: !!invoice,
+        hasPaymentIntent: !!paymentIntent,
+        hasSetupIntent: !!setupIntent,
+        hasClientSecret: !!clientSecret,
+        intentType: clientSecret ? intentType : 'none',
+        priceId: tierFeatures.stripePriceId,
+      });
+
+      if (!clientSecret) {
+        console.error('❌ Missing client secret! Invoice:', invoice?.id, 'PaymentIntent:', paymentIntent?.id, 'SetupIntent:', setupIntent?.id);
+        return res.status(500).json({ 
+          error: "Failed to create payment intent. Please verify your Stripe product prices are configured correctly.",
+          debug: {
+            subscriptionId: subscription.id,
+            status: subscription.status,
+            invoiceId: invoice?.id,
+            paymentIntentId: paymentIntent?.id,
+            setupIntentId: setupIntent?.id,
+            priceId: tierFeatures.stripePriceId,
+          }
+        });
+      }
 
       res.json({
         subscriptionId: subscription.id,
-        clientSecret: paymentIntent?.client_secret,
+        clientSecret,
+        intentType,
         status: subscription.status,
       });
     } catch (error: any) {
