@@ -431,6 +431,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   /**
+   * GET /api/stripe/config-check
+   * Diagnostic endpoint to check Stripe configuration
+   */
+  app.get('/api/stripe/config-check', async (req, res) => {
+    const hobbyPriceId = process.env.TESTING_STRIPE_PRICE_HOBBY || process.env.STRIPE_PRICE_HOBBY;
+    const proPriceId = process.env.TESTING_STRIPE_PRICE_PRO || process.env.STRIPE_PRICE_PRO;
+    
+    try {
+      let hobbyPriceDetails = null;
+      let proPriceDetails = null;
+      
+      if (hobbyPriceId) {
+        try {
+          const price = await stripe.prices.retrieve(hobbyPriceId);
+          hobbyPriceDetails = {
+            id: price.id,
+            active: price.active,
+            currency: price.currency,
+            unit_amount: price.unit_amount,
+            recurring: price.recurring,
+            product: price.product
+          };
+        } catch (err: any) {
+          hobbyPriceDetails = { error: err.message };
+        }
+      }
+      
+      if (proPriceId) {
+        try {
+          const price = await stripe.prices.retrieve(proPriceId);
+          proPriceDetails = {
+            id: price.id,
+            active: price.active,
+            currency: price.currency,
+            unit_amount: price.unit_amount,
+            recurring: price.recurring,
+            product: price.product
+          };
+        } catch (err: any) {
+          proPriceDetails = { error: err.message };
+        }
+      }
+      
+      res.json({
+        configured: {
+          TESTING_STRIPE_PRICE_HOBBY: !!process.env.TESTING_STRIPE_PRICE_HOBBY,
+          TESTING_STRIPE_PRICE_PRO: !!process.env.TESTING_STRIPE_PRICE_PRO,
+          STRIPE_PRICE_HOBBY: !!process.env.STRIPE_PRICE_HOBBY,
+          STRIPE_PRICE_PRO: !!process.env.STRIPE_PRICE_PRO,
+        },
+        priceIds: {
+          hobby: hobbyPriceId || 'NOT_SET',
+          pro: proPriceId || 'NOT_SET'
+        },
+        priceDetails: {
+          hobby: hobbyPriceDetails,
+          pro: proPriceDetails
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
    * POST /api/subscription/create
    * Create or retrieve a Stripe subscription
    */
@@ -480,6 +545,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get the Stripe Price ID for the tier
       const tierFeatures = TIER_FEATURES[tier];
+      console.log('🔍 Checking Stripe price configuration for tier:', tier);
+      console.log('  - stripePriceId:', tierFeatures.stripePriceId);
+      console.log('  - TESTING_STRIPE_PRICE_HOBBY:', process.env.TESTING_STRIPE_PRICE_HOBBY);
+      console.log('  - TESTING_STRIPE_PRICE_PRO:', process.env.TESTING_STRIPE_PRICE_PRO);
+      console.log('  - STRIPE_PRICE_HOBBY:', process.env.STRIPE_PRICE_HOBBY);
+      console.log('  - STRIPE_PRICE_PRO:', process.env.STRIPE_PRICE_PRO);
+      
       if (!tierFeatures.stripePriceId) {
         return res.status(500).json({ error: `Price ID not configured for ${tier} tier` });
       }
@@ -509,6 +581,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create subscription with userId in metadata for webhook lookup
       // Expand both payment_intent AND setup_intent (Stripe creates one or the other)
+      console.log('📝 Creating Stripe subscription with:', {
+        customer: customerId,
+        priceId: tierFeatures.stripePriceId,
+        tier,
+        userId
+      });
+      
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
         items: [{ price: tierFeatures.stripePriceId }],
@@ -516,6 +595,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         payment_settings: { save_default_payment_method: 'on_subscription' },
         expand: ['latest_invoice.payment_intent', 'pending_setup_intent'],
         metadata: { userId, requestedTier: tier }, // Store for webhook
+      });
+      
+      console.log('✅ Stripe API returned subscription:', {
+        id: subscription.id,
+        status: subscription.status,
+        latest_invoice_type: typeof subscription.latest_invoice,
+        pending_setup_intent_type: typeof subscription.pending_setup_intent,
       });
 
       // Update user with subscription ID, but keep FREE tier until payment succeeds
