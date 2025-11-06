@@ -735,6 +735,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   /**
+   * POST /api/subscription/complete
+   * Complete a subscription payment after SetupIntent succeeds
+   * This is a backup for webhook delivery issues
+   */
+  app.post('/api/subscription/complete', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { setupIntentId } = req.body;
+      
+      if (!setupIntentId) {
+        return res.status(400).json({ error: "Missing setupIntentId" });
+      }
+      
+      // Get the SetupIntent to retrieve subscription info
+      const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
+      const subscriptionId = setupIntent.metadata?.subscriptionId;
+      const paymentMethod = setupIntent.payment_method as string;
+      
+      console.log(`🔍 Retrieved SetupIntent:`, {
+        id: setupIntent.id,
+        status: setupIntent.status,
+        hasPaymentMethod: !!paymentMethod,
+        hasSubscriptionId: !!subscriptionId,
+        metadata: setupIntent.metadata,
+      });
+      
+      if (!subscriptionId) {
+        return res.status(400).json({ 
+          error: "Setup Intent missing subscription ID in metadata",
+          debug: { setupIntentId, metadata: setupIntent.metadata }
+        });
+      }
+      
+      if (!paymentMethod) {
+        return res.status(400).json({ 
+          error: "SetupIntent missing payment method. Please complete the payment form.",
+          debug: { setupIntentId, status: setupIntent.status }
+        });
+      }
+      
+      if (setupIntent.status !== 'succeeded') {
+        return res.status(400).json({ 
+          error: `SetupIntent status is '${setupIntent.status}', expected 'succeeded'`,
+          debug: { setupIntentId, status: setupIntent.status }
+        });
+      }
+      
+      console.log(`🔧 Completing subscription ${subscriptionId} for user ${userId}`);
+      
+      // 1. Get the subscription
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      
+      // 2. Attach payment method to customer (may already be attached)
+      try {
+        await stripe.paymentMethods.attach(paymentMethod, {
+          customer: subscription.customer as string,
+        });
+      } catch (err: any) {
+        // Ignore if already attached
+        if (!err.message?.includes('already been attached')) {
+          throw err;
+        }
+      }
+      
+      // 3. Set as default payment method
+      await stripe.customers.update(subscription.customer as string, {
+        invoice_settings: {
+          default_payment_method: paymentMethod,
+        },
+      });
+      
+      // 4. Update the subscription with the payment method
+      await stripe.subscriptions.update(subscriptionId, {
+        default_payment_method: paymentMethod,
+      });
+      
+      // 5. Pay the invoice
+      const invoice = subscription.latest_invoice;
+      if (invoice && typeof invoice === 'string') {
+        const invoiceObj = await stripe.invoices.retrieve(invoice);
+        if (invoiceObj.status !== 'paid') {
+          await stripe.invoices.pay(invoice);
+          console.log(`✅ Invoice ${invoice} paid successfully`);
+        }
+      }
+      
+      // 6. Get updated subscription status
+      const updatedSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+      
+      res.json({
+        success: true,
+        status: updatedSubscription.status,
+        message: "Subscription completed successfully"
+      });
+    } catch (error: any) {
+      console.error("Error completing subscription:", error);
+      res.status(500).json({ error: error.message || "Failed to complete subscription" });
+    }
+  });
+
+  /**
    * POST /api/subscription/cancel
    * Cancel a user's subscription
    */
@@ -927,6 +1028,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
               subscription.status
             );
             console.log(`🔄 Updated user ${userId} subscription: ${tier} (${subscription.status})`);
+          }
+          break;
+        }
+        case 'setup_intent.succeeded': {
+          // When SetupIntent succeeds, attach payment method and pay the invoice
+          const setupIntent = event.data.object as Stripe.SetupIntent;
+          const subscriptionId = setupIntent.metadata?.subscriptionId;
+          const userId = setupIntent.metadata?.userId;
+          const paymentMethod = setupIntent.payment_method as string;
+          
+          console.log(`🔧 SetupIntent succeeded for user ${userId}, subscription ${subscriptionId}`);
+          
+          if (subscriptionId && paymentMethod) {
+            try {
+              // 1. Attach payment method to the customer
+              const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+              await stripe.paymentMethods.attach(paymentMethod, {
+                customer: subscription.customer as string,
+              });
+              
+              // 2. Set as default payment method
+              await stripe.customers.update(subscription.customer as string, {
+                invoice_settings: {
+                  default_payment_method: paymentMethod,
+                },
+              });
+              
+              // 3. Update the subscription with the payment method
+              await stripe.subscriptions.update(subscriptionId, {
+                default_payment_method: paymentMethod,
+              });
+              
+              // 4. Get the latest invoice and pay it
+              const invoice = subscription.latest_invoice;
+              if (invoice && typeof invoice === 'string') {
+                const invoiceObj = await stripe.invoices.retrieve(invoice);
+                if (invoiceObj.status !== 'paid') {
+                  await stripe.invoices.pay(invoice);
+                  console.log(`✅ Invoice ${invoice} paid successfully for subscription ${subscriptionId}`);
+                }
+              }
+            } catch (err: any) {
+              console.error(`❌ Error processing SetupIntent for subscription ${subscriptionId}:`, err.message);
+            }
           }
           break;
         }

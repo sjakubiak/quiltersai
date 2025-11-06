@@ -13,10 +13,51 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 
 export default function Account() {
-  const { user, isLoading, logout } = useAuth();
-  const [, setLocation] = useLocation();
+  const { user, isLoading, logout, refetch } = useAuth();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isCompletingSubscription, setIsCompletingSubscription] = useState(false);
+
+  // Handle return from Stripe after SetupIntent confirmation
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const setupIntentId = urlParams.get('setup_intent');
+    const setupIntentClientSecret = urlParams.get('setup_intent_client_secret');
+    
+    if (setupIntentId && setupIntentClientSecret && !isCompletingSubscription) {
+      setIsCompletingSubscription(true);
+      
+      // Complete the subscription payment
+      apiRequest("POST", "/api/subscription/complete", { setupIntentId })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            toast({
+              title: "Subscription Activated!",
+              description: "Your subscription has been successfully activated.",
+            });
+            
+            // Clean URL and refresh user data
+            window.history.replaceState({}, '', '/account');
+            refetch();
+          } else {
+            throw new Error(data.error || "Failed to activate subscription");
+          }
+        })
+        .catch((error: any) => {
+          console.error("Error completing subscription:", error);
+          toast({
+            title: "Subscription Activation Failed",
+            description: error.message || "Please contact support if this issue persists.",
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
+          setIsCompletingSubscription(false);
+        });
+    }
+  }, [location, isCompletingSubscription, toast, refetch]);
 
   useEffect(() => {
     if (!isLoading && !user) {
