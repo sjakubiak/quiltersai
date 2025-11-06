@@ -1,0 +1,36 @@
+{
+  "id": "construction",
+  "name": "BuilderAI",
+  "description": "AI-powered construction blueprint generator",
+  "domain": "builderai.com",
+  "terminology": {
+    "itemName": "blueprint",
+    "itemPlural": "blueprints",
+    "actionVerb": "design",
+    "generateVerb": "generate",
+    "collectionName": "projects"
+  },
+  "branding": {
+    "primaryColor": "#2563EB",
+    "accentColor": "#F59E0B",
+    "tagline": "Build with precision",
+    "heroTitle": "Generate Professional Construction Blueprints with AI",
+    "heroSubtitle": "Transform your construction ideas into detailed blueprints—with materials lists, cost estimates, and building plans—in seconds."
+  },
+  "features": {
+    "pdfExport": true,
+    "imageUpload": true,
+    "advancedOptions": true,
+    "communityGallery": false
+  },
+  "pricing": {
+    "currency": "USD",
+    "hobbyPrice": 12,
+    "proPrice": 29
+  },
+  "seo": {
+    "title": "BuilderAI - AI-Powered Construction Blueprint Generator",
+    "description": "Create professional construction blueprints instantly with AI. Get complete designs with materials lists, cost estimates, and building specifications.",
+    "keywords": ["construction blueprints", "building plans", "AI construction", "materials estimator", "construction design"]
+  }
+}

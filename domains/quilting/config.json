@@ -1,0 +1,36 @@
+{
+  "id": "quilting",
+  "name": "Quilter's AI",
+  "description": "AI-powered quilt design generator",
+  "domain": "quiltersai.com",
+  "terminology": {
+    "itemName": "quilt",
+    "itemPlural": "quilts",
+    "actionVerb": "design",
+    "generateVerb": "generate",
+    "collectionName": "designs"
+  },
+  "branding": {
+    "primaryColor": "#D6456B",
+    "accentColor": "#3B82F6",
+    "tagline": "Design with intelligence",
+    "heroTitle": "Create Beautiful Quilt Patterns with AI",
+    "heroSubtitle": "Transform your ideas into complete quilt designs—with yardage, cut lists, and step-by-step instructions—in seconds."
+  },
+  "features": {
+    "pdfExport": true,
+    "imageUpload": true,
+    "advancedOptions": true,
+    "communityGallery": false
+  },
+  "pricing": {
+    "currency": "CAD",
+    "hobbyPrice": 8,
+    "proPrice": 18
+  },
+  "seo": {
+    "title": "Quilter's AI - AI-Powered Quilt Pattern Generator",
+    "description": "Create beautiful quilt patterns instantly with AI. Get complete designs with yardage calculations, cut lists, and assembly instructions.",
+    "keywords": ["quilt patterns", "quilt design", "AI quilting", "quilt calculator", "quilt yardage"]
+  }
+}

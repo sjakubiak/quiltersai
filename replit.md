@@ -39,6 +39,60 @@ Quilter's AI utilizes a modern full-stack architecture. The frontend is built wi
 - **OpenAI API**: Accessed via Replit AI Integrations for natural language processing and design generation.
 - **Resend**: Email service used for sending feedback notifications.
 - **Stripe**: Integrated for subscription management and secure payment processing.
-- **PostgreSQL**: Planned for persistent data storage, replacing current in-memory storage.
+- **PostgreSQL**: Persistent data storage using Drizzle ORM.
 - **PDFKit**: Used for generating printable PDF quilt patterns.
 - **ColorThief**: Library for extracting dominant colors from uploaded images.
+
+## Multi-Domain Framework (NEW)
+
+**Framework Architecture:**
+- Converted from single-domain application to configurable multi-domain framework
+- Plugin-based system allowing separate deployments for different industries
+- Each domain has independent branding, terminology, generation logic, and pricing
+- White-label ready for reselling to customers
+
+**Current Domains:**
+1. **Quilting** (`domains/quilting/`) - Original quilt pattern generator
+2. **Construction** (`domains/construction/`) - BuilderAI for construction blueprints
+
+**Framework Structure:**
+```
+framework/
+  types/domain-config.ts     - Domain configuration schema
+  types/plugin-interface.ts  - Plugin interface definitions
+  core/plugin-loader.ts      - Dynamic plugin loading
+  core/config-loader.ts      - Configuration management
+
+domains/
+  quilting/config.json       - Quilting branding & settings
+  quilting/plugin.ts         - Quilt generation logic
+  construction/config.json   - Construction branding & settings
+  construction/plugin.ts     - Blueprint generation logic
+```
+
+**Deployment Model:**
+- Single codebase, multiple deployments
+- Set `DOMAIN_ID` environment variable to load specific domain
+- Each deployment can have custom DNS (quiltersai.com, builderai.com)
+- Separate Stripe pricing per domain
+- Full white-label customization support
+
+**Documentation:**
+- `framework/README.md` - Framework architecture and domain creation guide
+- `DEPLOYMENT.md` - Multi-domain deployment guide
+- `WHITE_LABEL_GUIDE.md` - White-label configuration and pricing models
+
+## Recent Changes
+
+- **2025-11-06**: Multi-Domain Framework Implementation
+  - Created configurable plugin architecture for multiple domains
+  - Implemented Construction domain (BuilderAI) as proof-of-concept
+  - Added comprehensive documentation for deployment and white-labeling
+  - Framework supports independent deployments with custom branding
+  - White-label ready for selling to customers
+
+- **2025-11-06**: Comprehensive Mobile Responsiveness
+  - Mobile-first design with proper stacking and responsive grids
+  - All tap targets meet 44px minimum for accessibility
+  - Full-screen modal experience on mobile devices
+  - Zero horizontal overflow at all breakpoints
