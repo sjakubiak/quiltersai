@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Sparkles, TrendingUp } from "lucide-react";
+import { Sparkles, TrendingUp, AlertCircle, Zap } from "lucide-react";
 import { Link } from "wouter";
 
 interface UsageData {
@@ -75,41 +75,54 @@ export function UsageIndicator() {
       </div>
 
       {isAtLimit && (
-        <div className="pt-2 mt-2 border-t space-y-2">
-          <p className="text-xs text-destructive font-medium" data-testid="text-limit-reached">
-            You've reached your {usage.periodType} limit
-          </p>
+        <div className="pt-2 mt-2 border-t space-y-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+              <p className="text-xs text-destructive font-medium" data-testid="text-limit-reached">
+                Daily limit reached!
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground pl-6">
+              You're on fire! Upgrade to keep designing without limits.
+            </p>
+          </div>
           {usage.tier === "FREE" && (
             <Link href="/pricing">
               <button
                 data-testid="button-upgrade"
-                className="w-full text-xs px-3 py-2 bg-primary text-primary-foreground rounded-md hover-elevate active-elevate-2 flex items-center justify-center gap-1"
+                className="w-full text-xs px-4 py-2.5 bg-primary text-primary-foreground rounded-md hover-elevate active-elevate-2 flex items-center justify-center gap-2 font-medium"
               >
-                <TrendingUp className="h-3 w-3" />
-                Upgrade for more designs
+                <TrendingUp className="h-3.5 w-3.5" />
+                Unlock 50 Designs/Month - $8
               </button>
             </Link>
           )}
           {usage.tier !== "FREE" && (
-            <p className="text-xs" data-testid="text-reset-info">
-              Your limit will reset next {usage.periodType === "daily" ? "day" : "month"}
-            </p>
+            <div className="text-xs p-2 rounded bg-muted/50 flex items-center gap-2" data-testid="text-reset-info">
+              <Sparkles className="h-3 w-3 text-primary" />
+              Resets {usage.periodType === "daily" ? "tomorrow" : "next month"}
+            </div>
           )}
         </div>
       )}
 
       {isNearLimit && !isAtLimit && (
-        <div className="pt-2 mt-2 border-t">
-          <p className="text-xs text-amber-600 dark:text-amber-500" data-testid="text-near-limit">
-            Almost at your limit! {usage.remaining} design{usage.remaining !== 1 ? "s" : ""} left.
-          </p>
+        <div className="pt-2 mt-2 border-t space-y-2">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-500 shrink-0" />
+            <p className="text-xs text-amber-600 dark:text-amber-500 flex-1" data-testid="text-near-limit">
+              Almost out! Only {usage.remaining} design{usage.remaining !== 1 ? "s" : ""} left today.
+            </p>
+          </div>
           {usage.tier === "FREE" && (
             <Link href="/pricing">
               <button
                 data-testid="button-upgrade-soon"
-                className="mt-2 w-full text-xs px-3 py-1.5 border border-primary text-primary rounded-md hover-elevate active-elevate-2"
+                className="mt-1 w-full text-xs px-3 py-2 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 text-primary rounded-md hover-elevate active-elevate-2 font-medium flex items-center justify-center gap-2"
               >
-                Upgrade for unlimited
+                <Zap className="h-3.5 w-3.5" />
+                Get 50/month for less than 2 yards of fabric!
               </button>
             </Link>
           )}

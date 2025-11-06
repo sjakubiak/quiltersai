@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { PromptForm } from "@/components/prompt-form";
@@ -7,12 +7,23 @@ import { DesignDetail } from "@/components/design-detail";
 import { AuthHeader } from "@/components/auth-header";
 import { FeedbackForm } from "@/components/feedback-form";
 import { UsageIndicator } from "@/components/usage-indicator";
+import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Moon, Sun } from "lucide-react";
 import type { DesignVariation, DesignWithDetails } from "@shared/schema";
 
+interface UsageData {
+  tier: string;
+  limit: number | null;
+  used: number;
+  remaining: number | null;
+  periodType: string;
+  period: string;
+}
+
 export default function Home() {
   const [selectedDesign, setSelectedDesign] = useState<string | null>(null);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(
     () => (localStorage.getItem("theme") as "light" | "dark") || "light"
   );
@@ -41,6 +52,11 @@ export default function Home() {
     queryKey: ["/api/designs"],
   });
 
+  // Fetch usage data
+  const { data: usage } = useQuery<UsageData>({
+    queryKey: ["/api/usage"],
+  });
+
   // Fetch selected design details
   const { data: designDetails } = useQuery<DesignWithDetails>({
     queryKey: ["/api/designs", selectedDesign],
@@ -61,6 +77,15 @@ export default function Home() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/designs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/usage"] });
+      
+      // Show upgrade prompt for FREE tier users (but not every time)
+      if (usage?.tier === "FREE") {
+        const generationCount = usage.used + 1;
+        // Show on 2nd and 3rd generation (strategic timing)
+        if (generationCount === 2 || generationCount === 3) {
+          setTimeout(() => setShowUpgradePrompt(true), 1500);
+        }
+      }
     },
   });
 
@@ -166,6 +191,16 @@ export default function Home() {
         <DesignDetail
           design={designDetails}
           onClose={() => setSelectedDesign(null)}
+        />
+      )}
+
+      {/* Upgrade Prompt Modal */}
+      {usage && (
+        <UpgradePrompt
+          isOpen={showUpgradePrompt}
+          onClose={() => setShowUpgradePrompt(false)}
+          remainingDesigns={usage.remaining ?? 0}
+          tier={usage.tier}
         />
       )}
     </div>
