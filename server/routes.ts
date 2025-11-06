@@ -619,9 +619,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customer: customerId,
         items: [{ price: tierFeatures.stripePriceId }],
         payment_behavior: 'default_incomplete',
-        payment_settings: { save_default_payment_method: 'on_subscription' },
+        payment_settings: { 
+          save_default_payment_method: 'on_subscription',
+          payment_method_types: ['card']
+        },
         expand: ['latest_invoice.payment_intent', 'pending_setup_intent'],
         metadata: { userId, requestedTier: tier }, // Store for webhook
+        collection_method: 'charge_automatically', // Ensure we charge immediately
       });
       
       console.log('✅ Stripe API returned subscription:', {
@@ -641,9 +645,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Stripe creates EITHER a PaymentIntent OR SetupIntent depending on the subscription
-      const invoice = subscription.latest_invoice as Stripe.Invoice;
-      const paymentIntent = invoice?.payment_intent as Stripe.PaymentIntent;
-      const setupIntent = subscription.pending_setup_intent as Stripe.SetupIntent;
+      let invoice = subscription.latest_invoice as Stripe.Invoice;
+      let paymentIntent = invoice?.payment_intent as Stripe.PaymentIntent;
+      let setupIntent = subscription.pending_setup_intent as Stripe.SetupIntent;
+      
+      // If invoice exists but has no payment intent, try to finalize it
+      if (invoice && typeof invoice === 'object' && !paymentIntent && invoice.status === 'draft') {
+        console.log('⚠️ Invoice is in draft status, finalizing...');
+        try {
+          invoice = await stripe.invoices.finalizeInvoice(invoice.id, {
+            expand: ['payment_intent'],
+          });
+          paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+          console.log('✅ Invoice finalized, PaymentIntent:', paymentIntent?.id || 'none');
+        } catch (err: any) {
+          console.error('❌ Failed to finalize invoice:', err.message);
+        }
+      }
+      
+      // If still no PaymentIntent or SetupIntent, create a SetupIntent manually
+      // This happens when the subscription is created without an immediate payment requirement
+      if (!paymentIntent?.client_secret && !setupIntent?.client_secret) {
+        console.log('⚠️ No PaymentIntent or SetupIntent found, creating SetupIntent manually...');
+        try {
+          setupIntent = await stripe.setupIntents.create({
+            customer: customerId,
+            payment_method_types: ['card'],
+            metadata: {
+              userId,
+              subscriptionId: subscription.id,
+              requestedTier: tier,
+            },
+          });
+          console.log('✅ SetupIntent created:', setupIntent.id);
+        } catch (err: any) {
+          console.error('❌ Failed to create SetupIntent:', err.message);
+        }
+      }
       
       let clientSecret: string | undefined;
       let intentType: 'payment' | 'setup';
@@ -660,6 +698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionId: subscription.id,
         status: subscription.status,
         hasInvoice: !!invoice,
+        invoiceStatus: typeof invoice === 'object' ? invoice.status : 'unknown',
         hasPaymentIntent: !!paymentIntent,
         hasSetupIntent: !!setupIntent,
         hasClientSecret: !!clientSecret,
@@ -670,11 +709,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!clientSecret) {
         console.error('❌ Missing client secret! Invoice:', invoice?.id, 'PaymentIntent:', paymentIntent?.id, 'SetupIntent:', setupIntent?.id);
         return res.status(500).json({ 
-          error: "Failed to create payment intent. Please verify your Stripe product prices are configured correctly.",
+          error: "Failed to create payment intent. Please verify your Stripe configuration.",
           debug: {
             subscriptionId: subscription.id,
             status: subscription.status,
-            invoiceId: invoice?.id,
+            invoiceId: typeof invoice === 'object' ? invoice.id : null,
+            invoiceStatus: typeof invoice === 'object' ? invoice.status : null,
             paymentIntentId: paymentIntent?.id,
             setupIntentId: setupIntent?.id,
             priceId: tierFeatures.stripePriceId,

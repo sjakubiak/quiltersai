@@ -8,6 +8,7 @@ import Pricing from "@/pages/pricing";
 import Subscribe from "@/pages/subscribe";
 import Account from "@/pages/account";
 import AuthDebug from "@/pages/auth-debug";
+import StripeDiagnostic from "@/pages/stripe-diagnostic";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/account" component={Account} />
       <Route path="/auth-debug" component={AuthDebug} />
+      <Route path="/stripe-diagnostic" component={StripeDiagnostic} />
       <Route component={NotFound} />
     </Switch>
   );

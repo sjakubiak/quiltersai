@@ -84,6 +84,14 @@ domains/
 
 ## Recent Changes
 
+- **2025-11-06**: Stripe Configuration Debugging
+  - Resolved account mismatch: TESTING_STRIPE_SECRET_KEY and price IDs now from same account (acct_1SQ7K3H2Aoyp5vFH)
+  - Price IDs verified: Hobby ($8/month) and Pro ($18/month) exist in connected account
+  - Created /stripe-diagnostic page for configuration verification
+  - Issue: Subscription creation uses SetupIntent (collects payment method) but doesn't automatically pay invoice
+  - Current state: Stripe Elements loads successfully, payment method collected, but subscription remains 'incomplete'
+  - Next step: Need to handle SetupIntent completion and manually pay invoice, OR reconfigure Stripe prices to auto-create PaymentIntents
+
 - **2025-11-06**: Multi-Domain Framework Implementation
   - Created configurable plugin architecture for multiple domains
   - Implemented Construction domain (BuilderAI) as proof-of-concept
