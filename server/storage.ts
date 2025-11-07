@@ -9,6 +9,8 @@ import {
   type InsertPiecingStep,
   type SavedDesign,
   type InsertSavedDesign,
+  type UserFavorite,
+  type InsertUserFavorite,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -22,6 +24,7 @@ import {
   cutListItems,
   piecingSteps,
   savedDesigns,
+  userFavorites,
   users,
   usageTracking,
   feedback,
@@ -53,6 +56,12 @@ export interface IStorage {
   // Saved Designs
   saveDesign(saved: InsertSavedDesign): Promise<SavedDesign>;
   getSavedDesigns(userId?: string): Promise<SavedDesign[]>;
+
+  // User Favorites
+  addFavorite(userId: string, designId: string): Promise<UserFavorite>;
+  removeFavorite(userId: string, designId: string): Promise<void>;
+  isFavorited(userId: string, designId: string): Promise<boolean>;
+  getUserFavorites(userId: string): Promise<DesignVariation[]>;
 
   // Helper to get design with all details
   getDesignWithDetails(designId: string): Promise<DesignWithDetails | undefined>;
@@ -358,6 +367,42 @@ export class DbStorage implements IStorage {
       return await this.db.select().from(savedDesigns).where(eq(savedDesigns.userId, userId));
     }
     return await this.db.select().from(savedDesigns);
+  }
+
+  // User Favorites
+  async addFavorite(userId: string, designId: string): Promise<UserFavorite> {
+    const [favorite] = await this.db
+      .insert(userFavorites)
+      .values({ userId, designId })
+      .returning();
+    return favorite;
+  }
+
+  async removeFavorite(userId: string, designId: string): Promise<void> {
+    await this.db
+      .delete(userFavorites)
+      .where(and(eq(userFavorites.userId, userId), eq(userFavorites.designId, designId)));
+  }
+
+  async isFavorited(userId: string, designId: string): Promise<boolean> {
+    const [favorite] = await this.db
+      .select()
+      .from(userFavorites)
+      .where(and(eq(userFavorites.userId, userId), eq(userFavorites.designId, designId)));
+    return !!favorite;
+  }
+
+  async getUserFavorites(userId: string): Promise<DesignVariation[]> {
+    const favorites = await this.db
+      .select({
+        design: designVariations,
+      })
+      .from(userFavorites)
+      .innerJoin(designVariations, eq(userFavorites.designId, designVariations.id))
+      .where(eq(userFavorites.userId, userId))
+      .orderBy(desc(userFavorites.createdAt));
+    
+    return favorites.map(f => f.design);
   }
 
   // Helper method
