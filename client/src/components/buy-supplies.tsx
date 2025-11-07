@@ -1,8 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ShoppingBag } from "lucide-react";
+import { ExternalLink, ShoppingBag, Scissors, Package, Sparkles, Ruler } from "lucide-react";
 import { AFFILIATE_LINKS, type AffiliateLink } from "@shared/affiliate-config";
+import type { LucideIcon } from "lucide-react";
 
 interface BuySuppliesProps {
   totalYardage?: number;
@@ -10,13 +11,13 @@ interface BuySuppliesProps {
 }
 
 export function BuySupplies({ totalYardage, fabricColors }: BuySuppliesProps) {
-  const renderSupplyCategory = (category: keyof typeof AFFILIATE_LINKS, title: string, icon: string) => {
+  const renderSupplyCategory = (category: keyof typeof AFFILIATE_LINKS, title: string, Icon: LucideIcon) => {
     const links = AFFILIATE_LINKS[category];
     
     return (
       <div className="space-y-2">
         <h4 className="text-sm font-medium flex items-center gap-2">
-          <span>{icon}</span>
+          <Icon className="h-4 w-4 text-primary" />
           {title}
         </h4>
         <div className="grid gap-2">
@@ -57,7 +58,7 @@ export function BuySupplies({ totalYardage, fabricColors }: BuySuppliesProps) {
 
       <p className="text-sm text-muted-foreground mb-4">
         Get everything you need for this quilt. As an Amazon Associate and affiliate partner, 
-        we earn from qualifying purchases at no extra cost to you. This helps support Quilter's AI! 💖
+        we earn from qualifying purchases at no extra cost to you. This helps support Quilter's AI!
       </p>
 
       {totalYardage && (
@@ -72,10 +73,10 @@ export function BuySupplies({ totalYardage, fabricColors }: BuySuppliesProps) {
       )}
 
       <div className="space-y-4">
-        {renderSupplyCategory("fabric", "Quilting Fabric", "🧵")}
-        {renderSupplyCategory("batting", "Batting & Backing", "🛏️")}
-        {renderSupplyCategory("thread", "Thread", "🪡")}
-        {renderSupplyCategory("notions", "Cutting & Measuring", "📏")}
+        {renderSupplyCategory("fabric", "Quilting Fabric", Sparkles)}
+        {renderSupplyCategory("batting", "Batting & Backing", Package)}
+        {renderSupplyCategory("thread", "Thread", Scissors)}
+        {renderSupplyCategory("notions", "Cutting & Measuring", Ruler)}
       </div>
 
       <div className="pt-4 border-t">

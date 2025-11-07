@@ -168,7 +168,7 @@ export function SocialShare({ designName, blockPattern, sizeCategory, designId }
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
-            Sharing helps support Quilter's AI and inspires the quilting community! 💖
+            Sharing helps support Quilter's AI and inspires the quilting community!
           </p>
         </div>
       </DialogContent>

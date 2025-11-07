@@ -124,7 +124,7 @@ export const QUILTING_HASHTAGS = [
 ];
 
 export function generateSocialCaption(designName: string, blockPattern: string, size: string): string {
-  const caption = `Just designed "${designName}" - a beautiful ${blockPattern} quilt pattern! ✨\n\nSize: ${size}\nCreated with Quilter's AI 🎨\n\n${QUILTING_HASHTAGS.slice(0, 8).join(" ")}`;
+  const caption = `Just designed "${designName}" - a beautiful ${blockPattern} quilt pattern!\n\nSize: ${size}\nCreated with Quilter's AI\n\n${QUILTING_HASHTAGS.slice(0, 8).join(" ")}`;
   return caption;
 }
 
@@ -136,8 +136,12 @@ export function buildShareUrl(platform: "pinterest" | "facebook" | "twitter", de
     .replace("{url}", encodeURIComponent(designUrl))
     .replace("{caption}", encodeURIComponent(caption));
   
-  if (imageUrl) {
-    url = url.replace("{image}", encodeURIComponent(imageUrl));
+  if (platform === "pinterest") {
+    if (imageUrl) {
+      url = url.replace("{image}", encodeURIComponent(imageUrl));
+    } else {
+      url = url.replace("&media={image}", "");
+    }
   }
   
   return url;

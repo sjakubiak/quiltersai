@@ -178,7 +178,7 @@ export async function generateQuiltPDF(designDetails: DesignWithDetails): Promis
       doc.moveDown(1);
 
       // Fabric
-      doc.fontSize(12).font("Helvetica-Bold").text("📐 Quilting Fabric");
+      doc.fontSize(12).font("Helvetica-Bold").text("Quilting Fabric");
       doc.moveDown(0.5);
       doc.fontSize(9).font("Helvetica");
       doc.text("• Fat Quarter Shop: https://www.fatquartershop.com/?aff=quiltersai");
@@ -188,7 +188,7 @@ export async function generateQuiltPDF(designDetails: DesignWithDetails): Promis
       doc.moveDown(1);
 
       // Batting
-      doc.fontSize(12).font("Helvetica-Bold").text("🛏️ Batting & Backing");
+      doc.fontSize(12).font("Helvetica-Bold").text("Batting & Backing");
       doc.moveDown(0.5);
       doc.fontSize(9).font("Helvetica");
       doc.text("• Warm & Natural Batting: https://www.amazon.com/dp/B000YZ7G44?tag=quiltersai-20");
@@ -196,7 +196,7 @@ export async function generateQuiltPDF(designDetails: DesignWithDetails): Promis
       doc.moveDown(1);
 
       // Thread
-      doc.fontSize(12).font("Helvetica-Bold").text("🪡 Thread");
+      doc.fontSize(12).font("Helvetica-Bold").text("Thread");
       doc.moveDown(0.5);
       doc.fontSize(9).font("Helvetica");
       doc.text("• Aurifil Thread Set: https://www.amazon.com/dp/B00JQE7L8O?tag=quiltersai-20");
@@ -204,7 +204,7 @@ export async function generateQuiltPDF(designDetails: DesignWithDetails): Promis
       doc.moveDown(1);
 
       // Tools
-      doc.fontSize(12).font("Helvetica-Bold").text("📏 Cutting & Measuring");
+      doc.fontSize(12).font("Helvetica-Bold").text("Cutting & Measuring");
       doc.moveDown(0.5);
       doc.fontSize(9).font("Helvetica");
       doc.text("• Rotary Cutter & Mat Set: https://www.amazon.com/dp/B000YZ7IJI?tag=quiltersai-20");
