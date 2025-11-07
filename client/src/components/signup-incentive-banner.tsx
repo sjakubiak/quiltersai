@@ -50,8 +50,8 @@ export function SignupIncentiveBanner() {
             <div className="flex items-start gap-2">
               <TrendingUp className="h-4 w-4 text-primary shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium">5 Designs Daily</p>
-                <p className="text-xs text-muted-foreground">vs. 3 for guests</p>
+                <p className="text-sm font-medium">3 Designs Daily</p>
+                <p className="text-xs text-muted-foreground">vs. 1 for guests</p>
               </div>
             </div>
 
@@ -79,7 +79,7 @@ export function SignupIncentiveBanner() {
               className="gap-2 w-full sm:w-auto"
             >
               <Gift className="h-4 w-4" />
-              <span className="hidden sm:inline">Sign Up Free - Get 5/Day</span>
+              <span className="hidden sm:inline">Sign Up Free - Get 3/Day</span>
               <span className="sm:hidden">Sign Up Free</span>
             </Button>
             <Button
