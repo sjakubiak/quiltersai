@@ -4,8 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Bookmark, X, Check } from "lucide-react";
+import { Download, Bookmark, X, Check, Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useFavorites } from "@/hooks/useFavorites";
 import { apiRequest } from "@/lib/queryClient";
 import { CutListTable } from "@/components/cut-list-table";
 import { PiecingSteps } from "@/components/piecing-steps";
@@ -21,6 +22,7 @@ export function DesignDetail({ design, onClose }: DesignDetailProps) {
   const [activeTab, setActiveTab] = useState("overview");
   const [isSaved, setIsSaved] = useState(false);
   const { toast } = useToast();
+  const { isFavorited, toggleFavorite } = useFavorites();
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -120,6 +122,17 @@ export function DesignDetail({ design, onClose }: DesignDetailProps) {
               </div>
             </div>
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              <Button
+                data-testid="button-favorite-design"
+                size="icon"
+                variant="ghost"
+                onClick={() => toggleFavorite(design.design.id)}
+                className="hover-elevate active-elevate-2 min-h-[44px] min-w-[44px] sm:h-9 sm:w-9"
+              >
+                <Heart
+                  className={`h-5 w-5 ${isFavorited(design.design.id) ? 'fill-primary text-primary' : ''}`}
+                />
+              </Button>
               <Button
                 data-testid="button-save-design"
                 size="icon"
