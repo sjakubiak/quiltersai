@@ -324,6 +324,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   /**
+   * POST /api/favorites/:designId
+   * Toggle favorite status for a design (requires authentication)
+   */
+  app.post("/api/favorites/:designId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { designId } = req.params;
+      const userId = req.user.claims.sub;
+
+      if (!designId) {
+        return res.status(400).json({ error: "Design ID is required" });
+      }
+
+      // Check if already favorited
+      const isFavorited = await storage.isFavorited(userId, designId);
+
+      if (isFavorited) {
+        // Remove favorite
+        await storage.removeFavorite(userId, designId);
+        res.json({ favorited: false });
+      } else {
+        // Add favorite
+        await storage.addFavorite(userId, designId);
+        res.json({ favorited: true });
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+      res.status(500).json({ error: "Failed to toggle favorite" });
+    }
+  });
+
+  /**
+   * GET /api/favorites
+   * Get all favorited designs for the current user (requires authentication)
+   */
+  app.get("/api/favorites", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const favorites = await storage.getUserFavorites(userId);
+      res.json(favorites);
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
+      res.status(500).json({ error: "Failed to fetch favorites" });
+    }
+  });
+
+  /**
    * POST /api/export/pdf
    * Export a design as PDF (requires HOBBY or PRO tier)
    */
