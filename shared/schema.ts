@@ -76,6 +76,14 @@ export const savedDesigns = pgTable("saved_designs", {
   savedAt: timestamp("saved_at").defaultNow(),
 });
 
+// User favorites - designs users have favorited
+export const userFavorites = pgTable("user_favorites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  designId: varchar("design_id").notNull().references(() => designVariations.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Session storage table for Replit Auth
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const sessions = pgTable(
@@ -157,6 +165,11 @@ export const insertSavedDesignSchema = createInsertSchema(savedDesigns).omit({
   savedAt: true,
 });
 
+export const insertUserFavoriteSchema = createInsertSchema(userFavorites).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
   updatedAt: true,
@@ -188,6 +201,9 @@ export type InsertPiecingStep = z.infer<typeof insertPiecingStepSchema>;
 
 export type SavedDesign = typeof savedDesigns.$inferSelect;
 export type InsertSavedDesign = z.infer<typeof insertSavedDesignSchema>;
+
+export type UserFavorite = typeof userFavorites.$inferSelect;
+export type InsertUserFavorite = z.infer<typeof insertUserFavoriteSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
