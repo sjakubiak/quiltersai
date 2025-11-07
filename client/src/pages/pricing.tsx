@@ -39,7 +39,7 @@ export default function Pricing() {
           <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200 dark:border-blue-800">
             <p className="text-xs sm:text-sm font-medium text-blue-900 dark:text-blue-100 mb-1 sm:mb-2">
               <Check className="inline h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-              Create a free account and get <strong>5 designs daily</strong> (vs. 3 for guests) — no credit card required!
+              Create a free account and get <strong>3 designs daily</strong> (vs. 1 for guests) — no credit card required!
             </p>
             <p className="text-xs text-blue-700 dark:text-blue-300">
               Sign up with Google, GitHub, or email • Takes 30 seconds • Free forever

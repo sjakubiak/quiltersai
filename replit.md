@@ -82,7 +82,35 @@ domains/
 - `DEPLOYMENT.md` - Multi-domain deployment guide
 - `WHITE_LABEL_GUIDE.md` - White-label configuration and pricing models
 
+## Subscription Tiers & Usage Limits
+
+**Generation Limits:**
+- **Anonymous Users** (not logged in): 1 design per day
+- **FREE Tier** (registered users): 3 designs per day
+- **HOBBY Tier** ($8 CAD/month): 50 designs per month + PDF export
+- **PRO Tier** ($18 CAD/month): 500 designs per month + PDF/ZIP export + commercial license
+
+**PDF Export:**
+- Available for HOBBY and PRO tiers only
+- Implemented via `/api/export/pdf` endpoint
+- Checks subscription tier using `canExportPdf()` function
+- Returns 403 error for FREE tier users
+- Generates printable pattern with PDFKit library
+
 ## Recent Changes
+
+- **2025-11-06**: Updated Usage Limits
+  - Changed anonymous user limit from 3 to 1 design per day
+  - Changed registered FREE tier from 5 to 3 designs per day
+  - HOBBY and PRO tiers remain unchanged
+  - Updated pricing page to reflect new limits
+  - Verified PDF export functionality for subscribed users
+
+- **2025-11-06**: Subscription Page Fixes
+  - Added 30-second timeout protection to prevent infinite loading
+  - Improved error handling with automatic redirect to pricing on failure
+  - Fixed incomplete subscription cleanup (cancels broken old subscriptions)
+  - Better error messages for common issues (unauthorized, timeout, missing client secret)
 
 - **2025-11-06**: Stripe Subscription Flow - COMPLETE ✅
   - ✅ Resolved account mismatch: All Stripe keys and price IDs from same account (acct_1SQ7K3H2Aoyp5vFH)
