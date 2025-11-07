@@ -16,9 +16,12 @@ Quilter's AI utilizes a modern full-stack architecture. The frontend is built wi
 - Natural language prompt input with AI interpretation to structured quilt specifications.
 - Generation of 10+ quilt block patterns and multiple layout strategies (grid, brick/coin strips, modern improv).
 - SVG mockup previews and comprehensive quilt math (yardage, cut lists, binding, backing, batting).
-- Design detail view with tabs (Overview, Cut List, Piecing Steps, Assembly Layout).
+- Design detail view with tabs (Overview, Cut List, Piecing Steps, Assembly Layout, Buy Supplies).
+- **Favorites System**: Users can save favorite designs for quick access later.
+- **Social Media Sharing**: Pre-generated captions and share buttons for Pinterest, Facebook, and Twitter.
+- **Affiliate Marketing**: Curated supply recommendations with affiliate links (Amazon Associates, fabric retailers).
 - Responsive design with dark mode support.
-- API endpoints for prompt interpretation, design generation, retrieval, and saving.
+- API endpoints for prompt interpretation, design generation, retrieval, saving, and favorites.
 - Block Library: Nine Patch, Four Patch, Log Cabin (straight & courthouse), Rail Fence, Irish Chain, Flying Geese, Plus Quilt, Coins/Bricks.
 - Quilt Math Standards: 1/4″ seam allowance, 40-42″ usable WOF, specific calculations for binding, backing, batting, and yardage rounding to nearest 1/8 yard.
 - Size Presets: Baby, Throw, Twin, Full/Queen, King.
@@ -143,3 +146,22 @@ domains/
   - All tap targets meet 44px minimum for accessibility
   - Full-screen modal experience on mobile devices
   - Zero horizontal overflow at all breakpoints
+
+- **2025-11-07**: Affiliate Marketing & Social Media Sharing
+  - **Social Media Integration:**
+    - Added share dialog with pre-generated captions and quilting hashtags
+    - Platform-specific share buttons (Pinterest, Facebook, Twitter)
+    - Copy-to-clipboard functionality for captions and design links
+    - Share button integrated into design detail modal header
+  - **Affiliate Marketing:**
+    - New "Buy Supplies" tab in design detail with curated supply recommendations
+    - Affiliate links for fabric retailers (Fat Quarter Shop, Missouri Star)
+    - Amazon Associates links for batting, thread, cutting tools, and quilting supplies
+    - Transparent disclosure about affiliate partnerships
+    - PDF exports now include "Buy Supplies" page with clickable affiliate links
+  - **Implementation Details:**
+    - Created `shared/affiliate-config.ts` with centralized affiliate link management
+    - `SocialShare` component generates platform-specific URLs with encoded parameters
+    - `BuySupplies` component displays organized supply categories with descriptions
+    - All affiliate links tagged with `rel="noopener noreferrer sponsored"` for SEO
+    - PDF export enhanced with dedicated supplies page including Amazon and retailer links

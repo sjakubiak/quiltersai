@@ -121,7 +121,7 @@ export async function generateQuiltPDF(designDetails: DesignWithDetails): Promis
           currentX = doc.x;
           const rowData = [
             color,
-            item.pieceType,
+            item.pieceType || "",
             `${item.widthIn}" × ${item.heightIn}"`,
             item.quantity.toString(),
             `${item.yardage.toFixed(3)} yd`,
