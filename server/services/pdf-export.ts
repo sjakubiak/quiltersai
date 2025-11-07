@@ -191,7 +191,7 @@ export async function generateQuiltPDF(designDetails: DesignWithDetails): Promis
       doc.fontSize(12).font("Helvetica-Bold").text("Batting & Backing");
       doc.moveDown(0.5);
       doc.fontSize(9).font("Helvetica");
-      doc.text("• Warm & Natural Batting: https://www.amazon.com/dp/B000YZ7G44?tag=quiltersai-20");
+      doc.text("• Warm & Natural Batting: https://www.amazon.com/dp/B000YZ7G44?tag=devai-20");
       doc.text("  Popular cotton batting for quilts");
       doc.moveDown(1);
 
@@ -199,7 +199,7 @@ export async function generateQuiltPDF(designDetails: DesignWithDetails): Promis
       doc.fontSize(12).font("Helvetica-Bold").text("Thread");
       doc.moveDown(0.5);
       doc.fontSize(9).font("Helvetica");
-      doc.text("• Aurifil Thread Set: https://www.amazon.com/dp/B00JQE7L8O?tag=quiltersai-20");
+      doc.text("• Aurifil Thread Set: https://www.amazon.com/dp/B00JQE7L8O?tag=devai-20");
       doc.text("  Professional quilting thread collection");
       doc.moveDown(1);
 
@@ -207,9 +207,9 @@ export async function generateQuiltPDF(designDetails: DesignWithDetails): Promis
       doc.fontSize(12).font("Helvetica-Bold").text("Cutting & Measuring");
       doc.moveDown(0.5);
       doc.fontSize(9).font("Helvetica");
-      doc.text("• Rotary Cutter & Mat Set: https://www.amazon.com/dp/B000YZ7IJI?tag=quiltersai-20");
+      doc.text("• Rotary Cutter & Mat Set: https://www.amazon.com/dp/B000YZ7IJI?tag=devai-20");
       doc.text("  Essential quilting cutting tools");
-      doc.text("• Quilting Ruler Set: https://www.amazon.com/dp/B0000CBJES?tag=quiltersai-20");
+      doc.text("• Quilting Ruler Set: https://www.amazon.com/dp/B0000CBJES?tag=devai-20");
       doc.text("  Precision rulers for accurate cutting");
 
       // Footer on last page

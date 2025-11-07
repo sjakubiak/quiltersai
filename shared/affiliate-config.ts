@@ -30,13 +30,13 @@ export const AFFILIATE_LINKS: Record<string, AffiliateLink[]> = {
     {
       name: "Warm & Natural Batting",
       category: "batting",
-      url: "https://www.amazon.com/dp/B000YZ7G44?tag=quiltersai-20",
+      url: "https://www.amazon.com/dp/B000YZ7G44?tag=devai-20",
       description: "Popular cotton batting for quilts"
     },
     {
       name: "Pellon Fusible Fleece",
       category: "batting",
-      url: "https://www.amazon.com/dp/B000YZ8DVO?tag=quiltersai-20",
+      url: "https://www.amazon.com/dp/B000YZ8DVO?tag=devai-20",
       description: "Fusible batting for easier quilting"
     }
   ],
@@ -44,13 +44,13 @@ export const AFFILIATE_LINKS: Record<string, AffiliateLink[]> = {
     {
       name: "Aurifil Thread Set",
       category: "thread",
-      url: "https://www.amazon.com/dp/B00JQE7L8O?tag=quiltersai-20",
+      url: "https://www.amazon.com/dp/B00JQE7L8O?tag=devai-20",
       description: "Professional quilting thread collection"
     },
     {
       name: "Gutermann Thread",
       category: "thread",
-      url: "https://www.amazon.com/dp/B000VAUHXI?tag=quiltersai-20",
+      url: "https://www.amazon.com/dp/B000VAUHXI?tag=devai-20",
       description: "All-purpose sewing thread"
     }
   ],
@@ -58,13 +58,13 @@ export const AFFILIATE_LINKS: Record<string, AffiliateLink[]> = {
     {
       name: "Rotary Cutter & Mat Set",
       category: "notions",
-      url: "https://www.amazon.com/dp/B000YZ7IJI?tag=quiltersai-20",
+      url: "https://www.amazon.com/dp/B000YZ7IJI?tag=devai-20",
       description: "Essential quilting cutting tools"
     },
     {
       name: "Quilting Ruler Set",
       category: "notions",
-      url: "https://www.amazon.com/dp/B0000CBJES?tag=quiltersai-20",
+      url: "https://www.amazon.com/dp/B0000CBJES?tag=devai-20",
       description: "Precision rulers for accurate cutting"
     }
   ],
@@ -72,7 +72,7 @@ export const AFFILIATE_LINKS: Record<string, AffiliateLink[]> = {
     {
       name: "Sewing Machine",
       category: "tools",
-      url: "https://www.amazon.com/s?k=quilting+sewing+machine&tag=quiltersai-20",
+      url: "https://www.amazon.com/s?k=quilting+sewing+machine&tag=devai-20",
       description: "Browse quilting sewing machines"
     }
   ]
