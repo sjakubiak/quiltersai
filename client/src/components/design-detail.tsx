@@ -11,6 +11,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { CutListTable } from "@/components/cut-list-table";
 import { PiecingSteps } from "@/components/piecing-steps";
 import { QuiltOverview } from "@/components/quilt-overview";
+import { SocialShare } from "@/components/social-share";
+import { BuySupplies } from "@/components/buy-supplies";
 import type { DesignWithDetails } from "@shared/schema";
 
 interface DesignDetailProps {
@@ -121,7 +123,7 @@ export function DesignDetail({ design, onClose }: DesignDetailProps) {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0 flex-wrap sm:flex-nowrap">
               <Button
                 data-testid="button-favorite-design"
                 size="icon"
@@ -143,6 +145,12 @@ export function DesignDetail({ design, onClose }: DesignDetailProps) {
               >
                 {isSaved ? <Check className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
               </Button>
+              <SocialShare
+                designName={design.design.name}
+                blockPattern={design.design.blockPattern || ""}
+                sizeCategory={(design.design.metadata as any)?.sizeCategory || "custom"}
+                designId={design.design.id}
+              />
               <Button
                 data-testid="button-export-pdf"
                 variant="outline"
@@ -195,6 +203,9 @@ export function DesignDetail({ design, onClose }: DesignDetailProps) {
                 <TabsTrigger value="layout" data-testid="tab-layout" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">
                   Layout
                 </TabsTrigger>
+                <TabsTrigger value="supplies" data-testid="tab-supplies" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">
+                  Buy Supplies
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -232,6 +243,15 @@ export function DesignDetail({ design, onClose }: DesignDetailProps) {
                     </div>
                   </div>
                 )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="supplies" className="space-y-6">
+              <div className="rounded-lg border border-border bg-card p-6">
+                <BuySupplies
+                  totalYardage={design.design.totalYardage || undefined}
+                  fabricColors={design.cutList.map(item => item.fabricColor).filter((v, i, a) => a.indexOf(v) === i)}
+                />
               </div>
             </TabsContent>
           </Tabs>
