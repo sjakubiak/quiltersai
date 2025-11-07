@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { botDetectionMiddleware } from "./middleware/bot-detection";
 
 const app = express();
 
@@ -45,6 +46,9 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// Add bot detection middleware
+app.use(botDetectionMiddleware);
 
 (async () => {
   const server = await registerRoutes(app);

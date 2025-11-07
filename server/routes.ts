@@ -1245,6 +1245,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * GET /api/analytics/summary
+   * Get bot detection analytics summary (requires authentication)
+   */
+  app.get("/api/analytics/summary", isAuthenticated, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const summary = await storage.getRequestAnalyticsSummary(limit);
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching analytics summary:", error);
+      res.status(500).json({ error: "Failed to fetch analytics summary" });
+    }
+  });
+
+  /**
+   * GET /api/analytics/requests
+   * Get detailed request analytics with filtering (requires authentication)
+   */
+  app.get("/api/analytics/requests", isAuthenticated, async (req, res) => {
+    try {
+      const filters = {
+        ipAddress: req.query.ipAddress as string | undefined,
+        minBotScore: req.query.minBotScore ? parseInt(req.query.minBotScore as string) : undefined,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 100,
+        offset: req.query.offset ? parseInt(req.query.offset as string) : 0,
+      };
+
+      const requests = await storage.getRequestAnalytics(filters);
+      const count = await storage.getRequestAnalyticsCount(filters);
+
+      res.json({
+        requests,
+        total: count,
+        limit: filters.limit,
+        offset: filters.offset,
+      });
+    } catch (error) {
+      console.error("Error fetching analytics requests:", error);
+      res.status(500).json({ error: "Failed to fetch analytics requests" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

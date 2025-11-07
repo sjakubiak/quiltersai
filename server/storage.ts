@@ -18,6 +18,8 @@ import {
   type InsertUsageTracking,
   type Feedback,
   type InsertFeedback,
+  type RequestAnalytics,
+  type InsertRequestAnalytics,
   type DesignWithDetails,
   quiltSpecs,
   designVariations,
@@ -28,11 +30,12 @@ import {
   users,
   usageTracking,
   feedback,
+  requestAnalytics,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { eq, desc, asc, and } from "drizzle-orm";
+import { eq, desc, asc, and, gte, count, avg, sql as drizzleSql } from "drizzle-orm";
 
 export interface IStorage {
   // Quilt Specs
@@ -85,6 +88,12 @@ export interface IStorage {
   getAllFeedback(): Promise<Feedback[]>;
   getFeedbackById(id: string): Promise<Feedback | undefined>;
   updateFeedbackStatus(id: string, status: string): Promise<Feedback | undefined>;
+  
+  // Request Analytics
+  createRequestAnalytics(data: InsertRequestAnalytics): Promise<RequestAnalytics>;
+  getRequestAnalyticsSummary(limit?: number): Promise<{ totalRequests: number; uniqueIps: number; avgBotScore: number; topBotIps: Array<{ ipAddress: string; requestCount: number; avgBotScore: number }> }>;
+  getRequestAnalytics(filters: { ipAddress?: string; minBotScore?: number; limit?: number; offset?: number }): Promise<RequestAnalytics[]>;
+  getRequestAnalyticsCount(filters: { ipAddress?: string; minBotScore?: number }): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -603,6 +612,112 @@ export class DbStorage implements IStorage {
       .where(eq(feedback.id, id))
       .returning();
     return updated;
+  }
+
+  // Request Analytics
+  async createRequestAnalytics(data: InsertRequestAnalytics): Promise<RequestAnalytics> {
+    const [record] = await this.db.insert(requestAnalytics).values(data).returning();
+    return record;
+  }
+
+  async getRequestAnalyticsSummary(limit: number = 100): Promise<{
+    totalRequests: number;
+    uniqueIps: number;
+    avgBotScore: number;
+    topBotIps: Array<{ ipAddress: string; requestCount: number; avgBotScore: number }>;
+  }> {
+    // Use SQL aggregation for efficiency
+    // Get total requests and average bot score
+    const [stats] = await this.db
+      .select({
+        totalRequests: count(),
+        avgBotScore: avg(requestAnalytics.botScore),
+      })
+      .from(requestAnalytics);
+
+    // Get unique IPs count using DISTINCT
+    const [uniqueIpResult] = await this.db
+      .select({
+        uniqueIps: drizzleSql<number>`COUNT(DISTINCT ${requestAnalytics.ipAddress})::int`,
+      })
+      .from(requestAnalytics);
+
+    // Get top bot IPs using GROUP BY with aggregation
+    const topBotIpsQuery = await this.db
+      .select({
+        ipAddress: requestAnalytics.ipAddress,
+        requestCount: count(),
+        avgBotScore: drizzleSql<number>`ROUND(AVG(${requestAnalytics.botScore}))::int`,
+      })
+      .from(requestAnalytics)
+      .groupBy(requestAnalytics.ipAddress)
+      .orderBy(drizzleSql`AVG(${requestAnalytics.botScore}) DESC`)
+      .limit(limit);
+
+    return {
+      totalRequests: Number(stats.totalRequests) || 0,
+      uniqueIps: Number(uniqueIpResult.uniqueIps) || 0,
+      avgBotScore: Math.round(Number(stats.avgBotScore) || 0),
+      topBotIps: topBotIpsQuery.map((row) => ({
+        ipAddress: row.ipAddress,
+        requestCount: Number(row.requestCount),
+        avgBotScore: Number(row.avgBotScore),
+      })),
+    };
+  }
+
+  async getRequestAnalytics(filters: {
+    ipAddress?: string;
+    minBotScore?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<RequestAnalytics[]> {
+    const { ipAddress, minBotScore, limit = 100, offset = 0 } = filters;
+
+    let query = this.db.select().from(requestAnalytics);
+
+    const conditions = [];
+    if (ipAddress) {
+      conditions.push(eq(requestAnalytics.ipAddress, ipAddress));
+    }
+    if (minBotScore !== undefined) {
+      conditions.push(gte(requestAnalytics.botScore, minBotScore));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+
+    const results = await query
+      .orderBy(desc(requestAnalytics.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return results;
+  }
+
+  async getRequestAnalyticsCount(filters: {
+    ipAddress?: string;
+    minBotScore?: number;
+  }): Promise<number> {
+    const { ipAddress, minBotScore } = filters;
+
+    let query = this.db.select({ count: count() }).from(requestAnalytics);
+
+    const conditions = [];
+    if (ipAddress) {
+      conditions.push(eq(requestAnalytics.ipAddress, ipAddress));
+    }
+    if (minBotScore !== undefined) {
+      conditions.push(gte(requestAnalytics.botScore, minBotScore));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+
+    const [result] = await query;
+    return Number(result.count) || 0;
   }
 }
 

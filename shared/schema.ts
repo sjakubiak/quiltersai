@@ -141,6 +141,31 @@ export const feedback = pgTable("feedback", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Request analytics for bot detection
+export const requestAnalytics = pgTable(
+  "request_analytics",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    ipAddress: varchar("ip_address", { length: 45 }).notNull(), // IPv4 or IPv6
+    userAgent: text("user_agent"),
+    method: varchar("method", { length: 10 }).notNull(), // GET, POST, etc.
+    path: varchar("path", { length: 500 }).notNull(),
+    statusCode: integer("status_code"),
+    userId: varchar("user_id"), // null for anonymous
+    sessionId: varchar("session_id"), // Express session ID
+    headers: jsonb("headers"), // All request headers
+    botScore: integer("bot_score").notNull().default(0), // 0-100, higher = more likely bot
+    botFlags: text("bot_flags").array(), // Reasons for bot score (e.g., "rate_limit", "missing_headers")
+    responseTimeMs: integer("response_time_ms"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    index("idx_request_ip").on(table.ipAddress),
+    index("idx_request_created").on(table.createdAt),
+    index("idx_request_bot_score").on(table.botScore),
+  ]
+);
+
 // Insert schemas
 export const insertQuiltSpecSchema = createInsertSchema(quiltSpecs).omit({
   id: true,
@@ -186,6 +211,11 @@ export const insertFeedbackSchema = createInsertSchema(feedback).omit({
   createdAt: true,
 });
 
+export const insertRequestAnalyticsSchema = createInsertSchema(requestAnalytics).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type QuiltSpec = typeof quiltSpecs.$inferSelect;
 export type InsertQuiltSpec = z.infer<typeof insertQuiltSpecSchema>;
@@ -214,6 +244,9 @@ export type InsertUsageTracking = z.infer<typeof insertUsageTrackingSchema>;
 
 export type Feedback = typeof feedback.$inferSelect;
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+
+export type RequestAnalytics = typeof requestAnalytics.$inferSelect;
+export type InsertRequestAnalytics = z.infer<typeof insertRequestAnalyticsSchema>;
 
 // Additional TypeScript interfaces for API communication
 export interface PromptInterpretRequest {
