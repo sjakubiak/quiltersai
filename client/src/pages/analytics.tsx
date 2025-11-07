@@ -1,8 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, Activity, Users, TrendingUp } from "lucide-react";
+import { AlertTriangle, Activity, Users, TrendingUp, Lock } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "wouter";
 
 interface AnalyticsSummary {
   totalRequests: number;
@@ -22,9 +25,36 @@ function getBotScoreSeverity(score: number): { variant: "default" | "secondary" 
 }
 
 export default function Analytics() {
-  const { data: summary, isLoading } = useQuery<AnalyticsSummary>({
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  const { data: summary, isLoading, error } = useQuery<AnalyticsSummary>({
     queryKey: ["/api/analytics/summary"],
+    enabled: !!user,
   });
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+              <Lock className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <CardTitle>Authentication Required</CardTitle>
+            <CardDescription>
+              Please log in to access the analytics dashboard
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <Button onClick={() => setLocation("/")} data-testid="button-go-home">
+              Go to Home & Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -33,6 +63,51 @@ export default function Analytics() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading analytics...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
+              <AlertTriangle className="h-6 w-6 text-destructive" />
+            </div>
+            <CardTitle>Error Loading Analytics</CardTitle>
+            <CardDescription>
+              {error instanceof Error ? error.message : "Failed to load analytics data"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <Button onClick={() => window.location.reload()} data-testid="button-retry">
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!summary || summary.totalRequests === 0) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2">Bot Detection Analytics</h1>
+          <p className="text-muted-foreground">
+            Monitor traffic patterns and identify potential bot activity
+          </p>
+        </div>
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle>No Data Yet</CardTitle>
+            <CardDescription>
+              The bot detection system is running, but no requests have been tracked yet. 
+              Navigate around the app to generate some traffic data.
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
