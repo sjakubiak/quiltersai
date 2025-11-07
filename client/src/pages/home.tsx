@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { PromptForm } from "@/components/prompt-form";
 import { DesignGrid } from "@/components/design-grid";
@@ -10,8 +11,10 @@ import { UsageIndicator } from "@/components/usage-indicator";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { SignupIncentiveBanner } from "@/components/signup-incentive-banner";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Moon, Sun } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Sparkles, Moon, Sun, Heart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useFavorites } from "@/hooks/useFavorites";
 import { useToast } from "@/hooks/use-toast";
 import type { DesignVariation, DesignWithDetails } from "@shared/schema";
 
@@ -26,6 +29,7 @@ interface UsageData {
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
+  const { favorites } = useFavorites();
   const { toast } = useToast();
   const [selectedDesign, setSelectedDesign] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -118,6 +122,24 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <AuthHeader />
+            {isAuthenticated && (
+              <Link href="/favorites">
+                <Button
+                  data-testid="button-favorites"
+                  variant="ghost"
+                  size="sm"
+                  className="relative gap-2"
+                >
+                  <Heart className="h-4 w-4" />
+                  <span className="hidden sm:inline">Favorites</span>
+                  {favorites && favorites.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1 text-xs">
+                      {favorites.length}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+            )}
             <FeedbackForm />
             <Button
               data-testid="button-theme-toggle"
