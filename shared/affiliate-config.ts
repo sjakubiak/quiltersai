@@ -10,7 +10,7 @@ export const AFFILIATE_LINKS: Record<string, AffiliateLink[]> = {
     {
       name: "Fat Quarter Shop",
       category: "fabric",
-      url: "https://www.fatquartershop.com/?aff=quiltersai",
+      url: "https://www.awin1.com/cread.php?awinmid=89535&awinaffid=2646468&ued=https%3A%2F%2Fwww.fatquartershop.com%2F",
       description: "Premium quilting fabrics and pre-cuts"
     },
     {

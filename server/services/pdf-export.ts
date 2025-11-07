@@ -181,7 +181,7 @@ export async function generateQuiltPDF(designDetails: DesignWithDetails): Promis
       doc.fontSize(12).font("Helvetica-Bold").text("Quilting Fabric");
       doc.moveDown(0.5);
       doc.fontSize(9).font("Helvetica");
-      doc.text("• Fat Quarter Shop: https://www.fatquartershop.com/?aff=quiltersai");
+      doc.text("• Fat Quarter Shop: https://www.awin1.com/cread.php?awinmid=89535&awinaffid=2646468&ued=https%3A%2F%2Fwww.fatquartershop.com%2F");
       doc.text("  Premium quilting fabrics and pre-cuts");
       doc.text("• Missouri Star Quilt Co: https://www.missouriquiltco.com/?aff=quiltersai");
       doc.text("  Wide selection of quilting fabrics");
