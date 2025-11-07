@@ -1,17 +1,26 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Ruler, Layers, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, Ruler, Layers, TrendingUp, Heart } from "lucide-react";
 import type { DesignVariation } from "@shared/schema";
 
 interface DesignCardProps {
   design: DesignVariation;
   onClick: () => void;
+  isFavorited?: boolean;
+  onToggleFavorite?: () => void;
+  showFavoriteButton?: boolean;
 }
 
 const DIFFICULTY_LABELS = ["", "Beginner", "Easy", "Intermediate", "Advanced", "Expert"];
 
-export function DesignCard({ design, onClick }: DesignCardProps) {
+export function DesignCard({ design, onClick, isFavorited, onToggleFavorite, showFavoriteButton = true }: DesignCardProps) {
   const difficultyLabel = DIFFICULTY_LABELS[design.difficulty || 3] || "Intermediate";
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleFavorite?.();
+  };
 
   return (
     <Card
@@ -39,11 +48,26 @@ export function DesignCard({ design, onClick }: DesignCardProps) {
           <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
             {design.blockPattern}
           </Badge>
-          {design.scrapFriendly === 1 && (
-            <Badge variant="outline" className="bg-background/80 backdrop-blur-sm border-primary text-primary">
-              Scrap Friendly
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {design.scrapFriendly === 1 && (
+              <Badge variant="outline" className="bg-background/80 backdrop-blur-sm border-primary text-primary">
+                Scrap Friendly
+              </Badge>
+            )}
+            {showFavoriteButton && onToggleFavorite && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                onClick={handleFavoriteClick}
+                data-testid={`button-favorite-${design.id}`}
+              >
+                <Heart
+                  className={`h-4 w-4 ${isFavorited ? 'fill-primary text-primary' : 'text-muted-foreground'}`}
+                />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

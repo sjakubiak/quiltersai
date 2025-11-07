@@ -1,4 +1,5 @@
 import { DesignCard } from "@/components/design-card";
+import { useFavorites } from "@/hooks/useFavorites";
 import type { DesignVariation } from "@shared/schema";
 
 interface DesignGridProps {
@@ -7,6 +8,8 @@ interface DesignGridProps {
 }
 
 export function DesignGrid({ designs, onSelectDesign }: DesignGridProps) {
+  const { isFavorited, toggleFavorite } = useFavorites();
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between">
@@ -24,6 +27,8 @@ export function DesignGrid({ designs, onSelectDesign }: DesignGridProps) {
             key={design.id}
             design={design}
             onClick={() => onSelectDesign(design.id)}
+            isFavorited={isFavorited(design.id)}
+            onToggleFavorite={() => toggleFavorite(design.id)}
           />
         ))}
       </div>
