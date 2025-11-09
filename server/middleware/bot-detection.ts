@@ -128,10 +128,34 @@ export function calculateBotScore(
     flags.push(`rate_limit_${ipRateLimit.count}_per_min`);
   }
 
-  // 6. Check for suspicious paths
+  // 6. Check for suspicious paths (WordPress scanners, admin panels, config files)
   const path = req.path.toLowerCase();
-  const suspiciousPaths = ["/wp-admin", "/phpmyadmin", "/.env", "/config"];
-  if (suspiciousPaths.some((p) => path.includes(p))) {
+  const wordpressPaths = [
+    "wp-admin",
+    "wp-login",
+    "wp-content",
+    "wp-includes",
+    "xmlrpc.php",
+    "wp-config",
+    "wordpress",
+    ".php",
+  ];
+  const otherSuspiciousPaths = [
+    "phpmyadmin",
+    "/.env",
+    "/config",
+    "/.git",
+    "/admin",
+    "/administrator",
+    "/manager",
+    "/console",
+  ];
+
+  // WordPress-specific detection (very high score)
+  if (wordpressPaths.some((p) => path.includes(p))) {
+    score += 80;
+    flags.push("wordpress_scanner");
+  } else if (otherSuspiciousPaths.some((p) => path.includes(p))) {
     score += 50;
     flags.push("suspicious_path");
   }
@@ -170,6 +194,7 @@ function getClientIp(req: Request): string {
 /**
  * Bot detection middleware
  * Tracks all requests and calculates bot scores
+ * Blocks WordPress scanner traffic
  */
 export function botDetectionMiddleware(req: Request, res: Response, next: NextFunction) {
   const startTime = Date.now();
@@ -205,6 +230,31 @@ export function botDetectionMiddleware(req: Request, res: Response, next: NextFu
 
   // Calculate bot score
   const { score, flags } = calculateBotScore(req, ipRateLimit);
+
+  // Block WordPress scanner traffic (return 404 to waste their time)
+  if (flags.includes("wordpress_scanner")) {
+    const responseTimeMs = Date.now() - startTime;
+    
+    // Log the blocked request
+    storage.createRequestAnalytics({
+      ipAddress: ip,
+      userAgent,
+      method: req.method,
+      path: req.path,
+      statusCode: 404,
+      userId,
+      sessionId,
+      headers: req.headers as any,
+      botScore: score,
+      botFlags: flags.length > 0 ? flags : null,
+      responseTimeMs,
+    }).catch((error) => {
+      console.error("Error tracking blocked WordPress scanner:", error);
+    });
+    
+    // Return 404 to make it look like the site doesn't exist
+    return res.status(404).send("Not Found");
+  }
 
   // Track response
   res.on("finish", async () => {

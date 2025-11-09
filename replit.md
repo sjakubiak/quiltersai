@@ -165,3 +165,22 @@ domains/
     - `BuySupplies` component displays organized supply categories with descriptions
     - All affiliate links tagged with `rel="noopener noreferrer sponsored"` for SEO
     - PDF export enhanced with dedicated supplies page including Amazon and retailer links
+
+- **2025-11-07**: Bot Detection & WordPress Scanner Blocking
+  - **Bot Detection Analytics:**
+    - Comprehensive bot scoring system (0-100+ scale) analyzing every HTTP request
+    - Detection signals: User-Agent patterns, rate limiting, missing headers, header ordering, platform mismatches
+    - SQL-optimized analytics dashboard at `/analytics` (requires authentication)
+    - Summary metrics: total requests, unique IPs, average bot score, high-risk IP rankings
+    - Database schema with indexes on IP, timestamp, and bot score for performance
+  - **WordPress Scanner Blocking:**
+    - Automatic detection of WordPress scanner paths: `wp-login`, `wp-admin`, `wp-content`, `xmlrpc.php`, `.php` files
+    - WordPress scanners get +80 bot score (very high risk)
+    - Blocked requests immediately return 404 "Not Found" to waste scanner time
+    - All blocked attempts logged in analytics for monitoring
+  - **Implementation:**
+    - `server/middleware/bot-detection.ts` - Middleware with scoring algorithm and blocking logic
+    - `server/storage.ts` - SQL aggregation for efficient analytics queries using `COUNT`, `AVG`, `GROUP BY`
+    - `client/src/pages/analytics.tsx` - Admin dashboard with authentication requirement
+    - API endpoints `/api/analytics/summary` and `/api/analytics/requests` secured with `isAuthenticated` middleware
+    - Bot score filtering uses `gte` (greater-than-or-equal) for threshold queries
