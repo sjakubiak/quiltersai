@@ -1,12 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, Activity, Users, TrendingUp, Lock, CreditCard, MousePointer, CheckCircle } from "lucide-react";
+import { AlertTriangle, Activity, Users, TrendingUp, Lock, CreditCard, MousePointer, CheckCircle, Shield, Unlock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
-import type { SubscriptionEvent } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { SubscriptionEvent, BlockedIp } from "@shared/schema";
 
 interface AnalyticsSummary {
   totalRequests: number;
@@ -28,6 +30,10 @@ interface SubscriptionSummary {
   recentEvents: SubscriptionEvent[];
 }
 
+interface BlockedIpsResponse {
+  blockedIps: BlockedIp[];
+}
+
 function getBotScoreSeverity(score: number): { variant: "default" | "secondary" | "destructive" | "outline"; label: string } {
   if (score >= 70) return { variant: "destructive", label: "High Risk" };
   if (score >= 40) return { variant: "secondary", label: "Suspicious" };
@@ -37,6 +43,7 @@ function getBotScoreSeverity(score: number): { variant: "default" | "secondary" 
 export default function Analytics() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   
   const { data: summary, isLoading, error } = useQuery<AnalyticsSummary>({
     queryKey: ["/api/analytics/summary"],
@@ -46,6 +53,24 @@ export default function Analytics() {
   const { data: subscriptionSummary } = useQuery<SubscriptionSummary>({
     queryKey: ["/api/analytics/subscriptions"],
     enabled: !!user,
+  });
+
+  const { data: blockedIpsData } = useQuery<BlockedIpsResponse>({
+    queryKey: ["/api/analytics/blocked-ips"],
+    enabled: !!user,
+  });
+
+  const unblockMutation = useMutation({
+    mutationFn: async (ip: string) => {
+      return await apiRequest("DELETE", `/api/analytics/blocked-ips/${encodeURIComponent(ip)}`);
+    },
+    onSuccess: () => {
+      toast({ title: "IP Unblocked", description: "The IP address has been removed from the block list" });
+      queryClient.invalidateQueries({ queryKey: ["/api/analytics/blocked-ips"] });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to unblock IP", variant: "destructive" });
+    },
   });
 
   if (!user) {
@@ -363,6 +388,105 @@ export default function Analytics() {
                 No subscription events yet. Events will appear when users click subscription buttons.
               </div>
             )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Blocked IPs Section */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4">IP Blocking</h2>
+        
+        <Card data-testid="card-blocked-ips">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-destructive" />
+              <CardTitle>Currently Blocked IPs</CardTitle>
+            </div>
+            <CardDescription>
+              IPs automatically blocked for scoring 80+ (high risk). Blocks escalate with repeat offenses.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>IP Address</TableHead>
+                  <TableHead>Reason</TableHead>
+                  <TableHead className="text-right">Bot Score</TableHead>
+                  <TableHead className="text-right">Offenses</TableHead>
+                  <TableHead>Blocked Until</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {blockedIpsData?.blockedIps.map((blocked, index) => (
+                  <TableRow key={blocked.id} data-testid={`row-blocked-${index}`}>
+                    <TableCell className="font-mono text-sm">{blocked.ipAddress}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                      {blocked.reason}
+                    </TableCell>
+                    <TableCell className="text-right font-mono font-bold">
+                      {blocked.botScore || "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant={blocked.blockCount > 2 ? "destructive" : "secondary"}>
+                        {blocked.blockCount}x
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {blocked.blockedUntil ? new Date(blocked.blockedUntil).toLocaleString() : "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => unblockMutation.mutate(blocked.ipAddress)}
+                        disabled={unblockMutation.isPending}
+                        data-testid={`button-unblock-${index}`}
+                      >
+                        <Unlock className="h-4 w-4 mr-1" />
+                        Unblock
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {(!blockedIpsData?.blockedIps || blockedIpsData.blockedIps.length === 0) && (
+              <div className="text-center py-8 text-muted-foreground">
+                No IPs are currently blocked. High-risk IPs (score 80+) will be automatically blocked.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Auto-blocking Info */}
+        <Card className="mt-4" data-testid="card-blocking-info">
+          <CardHeader>
+            <CardTitle className="text-lg">How Auto-Blocking Works</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">Trigger</h4>
+                <p className="text-sm text-muted-foreground">
+                  IPs scoring 80+ are automatically blocked
+                </p>
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">First Offense</h4>
+                <p className="text-sm text-muted-foreground">
+                  24 hour block
+                </p>
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">Escalation</h4>
+                <p className="text-sm text-muted-foreground">
+                  Each repeat doubles duration (max 32 days)
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

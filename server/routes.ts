@@ -1334,6 +1334,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * GET /api/analytics/blocked-ips
+   * Get list of currently blocked IPs (requires authentication)
+   */
+  app.get("/api/analytics/blocked-ips", isAuthenticated, async (req, res) => {
+    try {
+      const blockedIps = await storage.getBlockedIps(100);
+      res.json({ blockedIps });
+    } catch (error) {
+      console.error("Error fetching blocked IPs:", error);
+      res.status(500).json({ error: "Failed to fetch blocked IPs" });
+    }
+  });
+
+  /**
+   * DELETE /api/analytics/blocked-ips/:ip
+   * Unblock a specific IP (requires authentication)
+   */
+  app.delete("/api/analytics/blocked-ips/:ip", isAuthenticated, async (req, res) => {
+    try {
+      const { ip } = req.params;
+      await storage.unblockIp(ip);
+      res.json({ success: true, message: `IP ${ip} has been unblocked` });
+    } catch (error) {
+      console.error("Error unblocking IP:", error);
+      res.status(500).json({ error: "Failed to unblock IP" });
+    }
+  });
+
+  // Periodic cleanup of expired blocks (every hour)
+  setInterval(async () => {
+    try {
+      const cleaned = await storage.cleanupExpiredBlocks();
+      if (cleaned > 0) {
+        console.log(`Cleaned up ${cleaned} expired IP blocks`);
+      }
+    } catch (error) {
+      console.error("Error cleaning up expired blocks:", error);
+    }
+  }, 60 * 60 * 1000); // 1 hour
+
   const httpServer = createServer(app);
   return httpServer;
 }

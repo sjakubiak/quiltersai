@@ -191,18 +191,52 @@ function getClientIp(req: Request): string {
   return req.ip || req.socket.remoteAddress || "unknown";
 }
 
+// Auto-block threshold
+const AUTO_BLOCK_THRESHOLD = 80;
+const DEFAULT_BLOCK_DURATION_HOURS = 24;
+
 /**
  * Bot detection middleware
  * Tracks all requests and calculates bot scores
  * Blocks WordPress scanner traffic
+ * Auto-blocks high-risk IPs (score >= 80) for 24 hours with escalation
  */
-export function botDetectionMiddleware(req: Request, res: Response, next: NextFunction) {
+export async function botDetectionMiddleware(req: Request, res: Response, next: NextFunction) {
   const startTime = Date.now();
   const ip = getClientIp(req);
   const userAgent = req.headers["user-agent"] || null;
   const user = (req as any).user;
   const userId = user?.claims?.sub || null;
   const sessionId = req.sessionID || null;
+
+  // Check if IP is already blocked
+  try {
+    const isBlocked = await storage.isIpBlocked(ip);
+    if (isBlocked) {
+      // Log the blocked request
+      storage.createRequestAnalytics({
+        ipAddress: ip,
+        userAgent,
+        method: req.method,
+        path: req.path,
+        statusCode: 403,
+        userId,
+        sessionId,
+        headers: req.headers as any,
+        botScore: 100,
+        botFlags: ["ip_blocked"],
+        responseTimeMs: Date.now() - startTime,
+      }).catch((error) => {
+        console.error("Error tracking blocked IP request:", error);
+      });
+      
+      // Return 403 Forbidden for blocked IPs
+      return res.status(403).send("Access Denied");
+    }
+  } catch (error) {
+    // Don't break the request if block check fails
+    console.error("Error checking IP block status:", error);
+  }
 
   // Update rate limiting tracker
   const now = Date.now();
@@ -230,6 +264,18 @@ export function botDetectionMiddleware(req: Request, res: Response, next: NextFu
 
   // Calculate bot score
   const { score, flags } = calculateBotScore(req, ipRateLimit);
+
+  // Auto-block high-risk IPs (score >= 80)
+  if (score >= AUTO_BLOCK_THRESHOLD) {
+    const reason = flags.length > 0 ? flags.join(", ") : "high_bot_score";
+    
+    // Block asynchronously - don't wait for it
+    storage.blockIp(ip, reason, score, DEFAULT_BLOCK_DURATION_HOURS).then((blocked) => {
+      console.log(`Auto-blocked IP ${ip} for ${DEFAULT_BLOCK_DURATION_HOURS * Math.pow(2, blocked.blockCount - 1)}h (score: ${score}, reason: ${reason}, offense #${blocked.blockCount})`);
+    }).catch((error) => {
+      console.error("Error auto-blocking IP:", error);
+    });
+  }
 
   // Block WordPress scanner traffic (return 404 to waste their time)
   if (flags.includes("wordpress_scanner")) {

@@ -20,6 +20,8 @@ import {
   type InsertFeedback,
   type RequestAnalytics,
   type InsertRequestAnalytics,
+  type BlockedIp,
+  type InsertBlockedIp,
   type SubscriptionEvent,
   type InsertSubscriptionEvent,
   type DesignWithDetails,
@@ -33,6 +35,7 @@ import {
   usageTracking,
   feedback,
   requestAnalytics,
+  blockedIps,
   subscriptionEvents,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -108,6 +111,14 @@ export interface IStorage {
     conversionRate: number;
     recentEvents: SubscriptionEvent[];
   }>;
+  
+  // Blocked IPs
+  isIpBlocked(ipAddress: string): Promise<boolean>;
+  blockIp(ipAddress: string, reason: string, botScore: number, durationHours?: number): Promise<BlockedIp>;
+  getBlockedIp(ipAddress: string): Promise<BlockedIp | undefined>;
+  unblockIp(ipAddress: string): Promise<void>;
+  getBlockedIps(limit?: number): Promise<BlockedIp[]>;
+  cleanupExpiredBlocks(): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -306,6 +317,64 @@ export class MemStorage implements IStorage {
 
   async updateFeedbackStatus(id: string, status: string): Promise<Feedback | undefined> {
     return undefined;
+  }
+
+  // Request Analytics - Stub implementations
+  async createRequestAnalytics(data: InsertRequestAnalytics): Promise<RequestAnalytics> {
+    throw new Error("Request analytics not supported in MemStorage");
+  }
+
+  async getRequestAnalyticsSummary(limit?: number): Promise<{ totalRequests: number; uniqueIps: number; avgBotScore: number; topBotIps: Array<{ ipAddress: string; requestCount: number; avgBotScore: number }> }> {
+    return { totalRequests: 0, uniqueIps: 0, avgBotScore: 0, topBotIps: [] };
+  }
+
+  async getRequestAnalytics(filters: { ipAddress?: string; minBotScore?: number; limit?: number; offset?: number }): Promise<RequestAnalytics[]> {
+    return [];
+  }
+
+  async getRequestAnalyticsCount(filters: { ipAddress?: string; minBotScore?: number }): Promise<number> {
+    return 0;
+  }
+
+  // Subscription Events - Stub implementations
+  async createSubscriptionEvent(data: InsertSubscriptionEvent): Promise<SubscriptionEvent> {
+    throw new Error("Subscription events not supported in MemStorage");
+  }
+
+  async getSubscriptionEventsSummary(): Promise<{
+    totalClicks: number;
+    hobbyClicks: number;
+    proClicks: number;
+    completions: number;
+    conversionRate: number;
+    recentEvents: SubscriptionEvent[];
+  }> {
+    return { totalClicks: 0, hobbyClicks: 0, proClicks: 0, completions: 0, conversionRate: 0, recentEvents: [] };
+  }
+
+  // Blocked IPs - Stub implementations
+  async isIpBlocked(ipAddress: string): Promise<boolean> {
+    return false;
+  }
+
+  async blockIp(ipAddress: string, reason: string, botScore: number, durationHours?: number): Promise<BlockedIp> {
+    throw new Error("IP blocking not supported in MemStorage");
+  }
+
+  async getBlockedIp(ipAddress: string): Promise<BlockedIp | undefined> {
+    return undefined;
+  }
+
+  async unblockIp(ipAddress: string): Promise<void> {
+    // No-op
+  }
+
+  async getBlockedIps(limit?: number): Promise<BlockedIp[]> {
+    return [];
+  }
+
+  async cleanupExpiredBlocks(): Promise<number> {
+    return 0;
   }
 }
 
@@ -800,6 +869,96 @@ export class DbStorage implements IStorage {
       conversionRate,
       recentEvents,
     };
+  }
+
+  // Blocked IPs
+  async isIpBlocked(ipAddress: string): Promise<boolean> {
+    const now = new Date();
+    const [blocked] = await this.db
+      .select()
+      .from(blockedIps)
+      .where(and(
+        eq(blockedIps.ipAddress, ipAddress),
+        gte(blockedIps.blockedUntil, now)
+      ))
+      .limit(1);
+    return !!blocked;
+  }
+
+  async blockIp(ipAddress: string, reason: string, botScore: number, durationHours: number = 24): Promise<BlockedIp> {
+    const now = new Date();
+    const blockedUntil = new Date(now.getTime() + durationHours * 60 * 60 * 1000);
+
+    // Check if IP is already blocked
+    const existing = await this.getBlockedIp(ipAddress);
+    
+    if (existing) {
+      // Escalate: increase block count and extend duration
+      const newBlockCount = existing.blockCount + 1;
+      // Escalation: each repeat offense doubles the block duration
+      const escalatedDuration = durationHours * Math.pow(2, Math.min(newBlockCount - 1, 5)); // Cap at 32x
+      const newBlockedUntil = new Date(now.getTime() + escalatedDuration * 60 * 60 * 1000);
+      
+      const [updated] = await this.db
+        .update(blockedIps)
+        .set({
+          reason,
+          botScore,
+          blockCount: newBlockCount,
+          blockedUntil: newBlockedUntil,
+          updatedAt: now,
+        })
+        .where(eq(blockedIps.ipAddress, ipAddress))
+        .returning();
+      return updated;
+    }
+
+    // Create new block
+    const [record] = await this.db
+      .insert(blockedIps)
+      .values({
+        ipAddress,
+        reason,
+        botScore,
+        blockCount: 1,
+        blockedUntil,
+      })
+      .returning();
+    return record;
+  }
+
+  async getBlockedIp(ipAddress: string): Promise<BlockedIp | undefined> {
+    const [blocked] = await this.db
+      .select()
+      .from(blockedIps)
+      .where(eq(blockedIps.ipAddress, ipAddress))
+      .limit(1);
+    return blocked;
+  }
+
+  async unblockIp(ipAddress: string): Promise<void> {
+    await this.db
+      .delete(blockedIps)
+      .where(eq(blockedIps.ipAddress, ipAddress));
+  }
+
+  async getBlockedIps(limit: number = 100): Promise<BlockedIp[]> {
+    const now = new Date();
+    return await this.db
+      .select()
+      .from(blockedIps)
+      .where(gte(blockedIps.blockedUntil, now))
+      .orderBy(desc(blockedIps.updatedAt))
+      .limit(limit);
+  }
+
+  async cleanupExpiredBlocks(): Promise<number> {
+    const now = new Date();
+    const result = await this.db
+      .delete(blockedIps)
+      .where(drizzleSql`${blockedIps.blockedUntil} < ${now}`)
+      .returning();
+    return result.length;
   }
 }
 

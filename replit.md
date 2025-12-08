@@ -202,3 +202,23 @@ domains/
     - `GET /api/analytics/subscriptions` - Get subscription analytics summary (requires auth)
     - Pricing page tracks clicks before navigating to subscribe page
     - Event types: click, start_checkout, complete, cancel
+
+- **2025-12-08**: Auto-Blocking High-Risk IPs
+  - **Features:**
+    - Automatic blocking of IPs with bot score >= 80
+    - 24-hour initial block duration
+    - Escalation: repeat offenders get doubled block duration (up to 32x = ~32 days)
+    - Manual unblock capability from analytics dashboard
+    - Periodic cleanup of expired blocks (every hour)
+  - **Analytics Dashboard Updates:**
+    - "IP Blocking" section showing currently blocked IPs
+    - Table with IP, reason, bot score, offense count, expiration
+    - "Unblock" button for each blocked IP
+    - Info card explaining escalation system
+  - **Implementation:**
+    - `blocked_ips` database table with indexes on ipAddress and blockedUntil
+    - Bot detection middleware checks blocked status before processing
+    - Returns 403 "Access Denied" for blocked IPs
+    - `GET /api/analytics/blocked-ips` - List blocked IPs (requires auth)
+    - `DELETE /api/analytics/blocked-ips/:ip` - Unblock IP (requires auth)
+    - Async blocking to prevent slowing down request processing

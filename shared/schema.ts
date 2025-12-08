@@ -166,6 +166,25 @@ export const requestAnalytics = pgTable(
   ]
 );
 
+// Blocked IPs for auto-blocking high-risk traffic
+export const blockedIps = pgTable(
+  "blocked_ips",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    ipAddress: varchar("ip_address", { length: 45 }).notNull().unique(),
+    reason: text("reason").notNull(), // e.g., "high_bot_score", "wordpress_scanner", "rate_limit"
+    botScore: integer("bot_score"), // Score that triggered the block
+    blockCount: integer("block_count").notNull().default(1), // Number of times blocked (for escalation)
+    blockedUntil: timestamp("blocked_until").notNull(), // When the block expires
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    index("idx_blocked_ip").on(table.ipAddress),
+    index("idx_blocked_until").on(table.blockedUntil),
+  ]
+);
+
 // Insert schemas
 export const insertQuiltSpecSchema = createInsertSchema(quiltSpecs).omit({
   id: true,
@@ -216,6 +235,12 @@ export const insertRequestAnalyticsSchema = createInsertSchema(requestAnalytics)
   createdAt: true,
 });
 
+export const insertBlockedIpSchema = createInsertSchema(blockedIps).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type QuiltSpec = typeof quiltSpecs.$inferSelect;
 export type InsertQuiltSpec = z.infer<typeof insertQuiltSpecSchema>;
@@ -247,6 +272,9 @@ export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 
 export type RequestAnalytics = typeof requestAnalytics.$inferSelect;
 export type InsertRequestAnalytics = z.infer<typeof insertRequestAnalyticsSchema>;
+
+export type BlockedIp = typeof blockedIps.$inferSelect;
+export type InsertBlockedIp = z.infer<typeof insertBlockedIpSchema>;
 
 // Subscription Events tracking
 export const subscriptionEvents = pgTable("subscription_events", {
