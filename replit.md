@@ -184,3 +184,21 @@ domains/
     - `client/src/pages/analytics.tsx` - Admin dashboard with authentication requirement
     - API endpoints `/api/analytics/summary` and `/api/analytics/requests` secured with `isAuthenticated` middleware
     - Bot score filtering uses `gte` (greater-than-or-equal) for threshold queries
+
+- **2025-11-07**: Subscription Click Tracking
+  - **Features:**
+    - Track all subscription button clicks (Hobby and Pro plans)
+    - Measure conversion rate (clicks to completions)
+    - View recent subscription events with user info
+    - Source tracking (pricing_page, upgrade_prompt, account_page)
+  - **Analytics Dashboard:**
+    - Total subscription button clicks
+    - Clicks per tier (Hobby vs Pro)
+    - Conversion rate percentage
+    - Recent events table with event type, tier, source, user, and timestamp
+  - **Implementation:**
+    - `subscription_events` database table with indexes on userId, eventType, tier, createdAt
+    - `POST /api/analytics/subscription-event` - Track subscription events (public endpoint)
+    - `GET /api/analytics/subscriptions` - Get subscription analytics summary (requires auth)
+    - Pricing page tracks clicks before navigating to subscribe page
+    - Event types: click, start_checkout, complete, cancel

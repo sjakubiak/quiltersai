@@ -248,6 +248,31 @@ export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 export type RequestAnalytics = typeof requestAnalytics.$inferSelect;
 export type InsertRequestAnalytics = z.infer<typeof insertRequestAnalyticsSchema>;
 
+// Subscription Events tracking
+export const subscriptionEvents = pgTable("subscription_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id"),
+  sessionId: varchar("session_id"),
+  eventType: varchar("event_type", { length: 50 }).notNull(), // click, start_checkout, complete, cancel
+  tier: varchar("tier", { length: 20 }).notNull(), // HOBBY, PRO
+  source: varchar("source", { length: 50 }), // pricing_page, upgrade_prompt, account_page
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("subscription_events_user_id_idx").on(table.userId),
+  index("subscription_events_event_type_idx").on(table.eventType),
+  index("subscription_events_tier_idx").on(table.tier),
+  index("subscription_events_created_at_idx").on(table.createdAt),
+]);
+
+export const insertSubscriptionEventSchema = createInsertSchema(subscriptionEvents).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type SubscriptionEvent = typeof subscriptionEvents.$inferSelect;
+export type InsertSubscriptionEvent = z.infer<typeof insertSubscriptionEventSchema>;
+
 // Additional TypeScript interfaces for API communication
 export interface PromptInterpretRequest {
   prompt: string;

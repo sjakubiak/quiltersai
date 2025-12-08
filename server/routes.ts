@@ -1288,6 +1288,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * POST /api/analytics/subscription-event
+   * Track subscription button clicks and events
+   */
+  app.post("/api/analytics/subscription-event", async (req, res) => {
+    try {
+      const { eventType, tier, source, metadata } = req.body;
+      
+      if (!eventType || !tier) {
+        return res.status(400).json({ error: "eventType and tier are required" });
+      }
+      
+      const user = (req as any).user;
+      const userId = user?.claims?.sub || null;
+      const sessionId = req.sessionID || null;
+      
+      const event = await storage.createSubscriptionEvent({
+        userId,
+        sessionId,
+        eventType,
+        tier,
+        source: source || null,
+        metadata: metadata || null,
+      });
+      
+      res.json({ success: true, eventId: event.id });
+    } catch (error) {
+      console.error("Error tracking subscription event:", error);
+      res.status(500).json({ error: "Failed to track event" });
+    }
+  });
+
+  /**
+   * GET /api/analytics/subscriptions
+   * Get subscription event analytics (requires authentication)
+   */
+  app.get("/api/analytics/subscriptions", isAuthenticated, async (req, res) => {
+    try {
+      const summary = await storage.getSubscriptionEventsSummary();
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching subscription analytics:", error);
+      res.status(500).json({ error: "Failed to fetch subscription analytics" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

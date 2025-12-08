@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, Activity, Users, TrendingUp, Lock } from "lucide-react";
+import { AlertTriangle, Activity, Users, TrendingUp, Lock, CreditCard, MousePointer, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
+import type { SubscriptionEvent } from "@shared/schema";
 
 interface AnalyticsSummary {
   totalRequests: number;
@@ -16,6 +17,15 @@ interface AnalyticsSummary {
     requestCount: number;
     avgBotScore: number;
   }>;
+}
+
+interface SubscriptionSummary {
+  totalClicks: number;
+  hobbyClicks: number;
+  proClicks: number;
+  completions: number;
+  conversionRate: number;
+  recentEvents: SubscriptionEvent[];
 }
 
 function getBotScoreSeverity(score: number): { variant: "default" | "secondary" | "destructive" | "outline"; label: string } {
@@ -30,6 +40,11 @@ export default function Analytics() {
   
   const { data: summary, isLoading, error } = useQuery<AnalyticsSummary>({
     queryKey: ["/api/analytics/summary"],
+    enabled: !!user,
+  });
+
+  const { data: subscriptionSummary } = useQuery<SubscriptionSummary>({
+    queryKey: ["/api/analytics/subscriptions"],
     enabled: !!user,
   });
 
@@ -247,6 +262,110 @@ export default function Analytics() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Subscription Analytics Section */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4">Subscription Analytics</h2>
+        
+        {/* Subscription Summary Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+          <Card data-testid="card-total-clicks">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Clicks</CardTitle>
+              <MousePointer className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{subscriptionSummary?.totalClicks || 0}</div>
+              <p className="text-xs text-muted-foreground">Subscription button clicks</p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-hobby-clicks">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Hobby Clicks</CardTitle>
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{subscriptionSummary?.hobbyClicks || 0}</div>
+              <p className="text-xs text-muted-foreground">$8/month plan</p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-pro-clicks">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pro Clicks</CardTitle>
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{subscriptionSummary?.proClicks || 0}</div>
+              <p className="text-xs text-muted-foreground">$18/month plan</p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-conversion-rate">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{subscriptionSummary?.conversionRate || 0}%</div>
+              <p className="text-xs text-muted-foreground">
+                {subscriptionSummary?.completions || 0} completions
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Subscription Events */}
+        <Card data-testid="card-recent-events">
+          <CardHeader>
+            <CardTitle>Recent Subscription Events</CardTitle>
+            <CardDescription>
+              Track user interest in subscription plans
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Event</TableHead>
+                  <TableHead>Tier</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead className="text-right">Time</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {subscriptionSummary?.recentEvents.map((event, index) => (
+                  <TableRow key={event.id} data-testid={`row-event-${index}`}>
+                    <TableCell>
+                      <Badge variant={event.eventType === "complete" ? "default" : "secondary"}>
+                        {event.eventType}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{event.tier}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {event.source || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground font-mono">
+                      {event.userId ? event.userId.slice(0, 8) + "..." : "Anonymous"}
+                    </TableCell>
+                    <TableCell className="text-right text-sm text-muted-foreground">
+                      {event.createdAt ? new Date(event.createdAt).toLocaleString() : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {(!subscriptionSummary?.recentEvents || subscriptionSummary.recentEvents.length === 0) && (
+              <div className="text-center py-8 text-muted-foreground">
+                No subscription events yet. Events will appear when users click subscription buttons.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

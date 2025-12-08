@@ -4,10 +4,12 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TIER_FEATURES, type SubscriptionTier } from "@shared/pricing";
 import { useAuth } from "@/hooks/useAuth";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Pricing() {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
 
   const tiers: Array<{
     id: SubscriptionTier;
@@ -17,6 +19,19 @@ export default function Pricing() {
     { id: "HOBBY", popular: true },
     { id: "PRO" },
   ];
+
+  const trackSubscriptionClick = async (tier: string) => {
+    try {
+      await apiRequest("POST", "/api/analytics/subscription-event", {
+        eventType: "click",
+        tier,
+        source: "pricing_page",
+      });
+    } catch (error) {
+      console.error("Failed to track subscription click:", error);
+    }
+    setLocation(`/subscribe?tier=${tier}`);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -213,16 +228,15 @@ export default function Pricing() {
                     </Button>
                   </Link>
                 ) : (
-                  <Link href={`/subscribe?tier=${id}`}>
-                    <Button
-                      className="w-full"
-                      variant={popular ? "default" : "outline"}
-                      data-testid={`button-subscribe-${id.toLowerCase()}`}
-                    >
-                      <TrendingUp className="h-4 w-4 mr-2" />
-                      {popular ? "Upgrade to Hobby →" : "Upgrade to Pro →"}
-                    </Button>
-                  </Link>
+                  <Button
+                    className="w-full"
+                    variant={popular ? "default" : "outline"}
+                    onClick={() => trackSubscriptionClick(id)}
+                    data-testid={`button-subscribe-${id.toLowerCase()}`}
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    {popular ? "Upgrade to Hobby →" : "Upgrade to Pro →"}
+                  </Button>
                 )}
               </Card>
             );

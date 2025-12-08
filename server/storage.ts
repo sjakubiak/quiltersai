@@ -20,6 +20,8 @@ import {
   type InsertFeedback,
   type RequestAnalytics,
   type InsertRequestAnalytics,
+  type SubscriptionEvent,
+  type InsertSubscriptionEvent,
   type DesignWithDetails,
   quiltSpecs,
   designVariations,
@@ -31,6 +33,7 @@ import {
   usageTracking,
   feedback,
   requestAnalytics,
+  subscriptionEvents,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { neon } from "@neondatabase/serverless";
@@ -94,6 +97,17 @@ export interface IStorage {
   getRequestAnalyticsSummary(limit?: number): Promise<{ totalRequests: number; uniqueIps: number; avgBotScore: number; topBotIps: Array<{ ipAddress: string; requestCount: number; avgBotScore: number }> }>;
   getRequestAnalytics(filters: { ipAddress?: string; minBotScore?: number; limit?: number; offset?: number }): Promise<RequestAnalytics[]>;
   getRequestAnalyticsCount(filters: { ipAddress?: string; minBotScore?: number }): Promise<number>;
+  
+  // Subscription Events
+  createSubscriptionEvent(data: InsertSubscriptionEvent): Promise<SubscriptionEvent>;
+  getSubscriptionEventsSummary(): Promise<{
+    totalClicks: number;
+    hobbyClicks: number;
+    proClicks: number;
+    completions: number;
+    conversionRate: number;
+    recentEvents: SubscriptionEvent[];
+  }>;
 }
 
 export class MemStorage implements IStorage {
@@ -718,6 +732,74 @@ export class DbStorage implements IStorage {
 
     const [result] = await query;
     return Number(result.count) || 0;
+  }
+
+  // Subscription Events
+  async createSubscriptionEvent(data: InsertSubscriptionEvent): Promise<SubscriptionEvent> {
+    const [record] = await this.db.insert(subscriptionEvents).values(data).returning();
+    return record;
+  }
+
+  async getSubscriptionEventsSummary(): Promise<{
+    totalClicks: number;
+    hobbyClicks: number;
+    proClicks: number;
+    completions: number;
+    conversionRate: number;
+    recentEvents: SubscriptionEvent[];
+  }> {
+    // Get total clicks
+    const [totalClicksResult] = await this.db
+      .select({ count: count() })
+      .from(subscriptionEvents)
+      .where(eq(subscriptionEvents.eventType, "click"));
+    const totalClicks = Number(totalClicksResult?.count) || 0;
+
+    // Get hobby clicks
+    const [hobbyClicksResult] = await this.db
+      .select({ count: count() })
+      .from(subscriptionEvents)
+      .where(and(
+        eq(subscriptionEvents.eventType, "click"),
+        eq(subscriptionEvents.tier, "HOBBY")
+      ));
+    const hobbyClicks = Number(hobbyClicksResult?.count) || 0;
+
+    // Get pro clicks
+    const [proClicksResult] = await this.db
+      .select({ count: count() })
+      .from(subscriptionEvents)
+      .where(and(
+        eq(subscriptionEvents.eventType, "click"),
+        eq(subscriptionEvents.tier, "PRO")
+      ));
+    const proClicks = Number(proClicksResult?.count) || 0;
+
+    // Get completions
+    const [completionsResult] = await this.db
+      .select({ count: count() })
+      .from(subscriptionEvents)
+      .where(eq(subscriptionEvents.eventType, "complete"));
+    const completions = Number(completionsResult?.count) || 0;
+
+    // Calculate conversion rate
+    const conversionRate = totalClicks > 0 ? Math.round((completions / totalClicks) * 100) : 0;
+
+    // Get recent events
+    const recentEvents = await this.db
+      .select()
+      .from(subscriptionEvents)
+      .orderBy(desc(subscriptionEvents.createdAt))
+      .limit(20);
+
+    return {
+      totalClicks,
+      hobbyClicks,
+      proClicks,
+      completions,
+      conversionRate,
+      recentEvents,
+    };
   }
 }
 
