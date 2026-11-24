@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SiteFooter } from "@/components/site-footer";
 import Home from "@/pages/home";
 import Pricing from "@/pages/pricing";
 import Subscribe from "@/pages/subscribe";
@@ -34,7 +35,12 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <Router />
+        <div className="flex min-h-dvh flex-col">
+          <div className="flex-1">
+            <Router />
+          </div>
+          <SiteFooter />
+        </div>
       </TooltipProvider>
     </QueryClientProvider>
   );
